@@ -32,17 +32,14 @@ consultations.get('/', requireAuth, async (c) => {
         bindings.push(status);
       }
     } else {
-      // 일반 모드: 진행중인 건만 표시
-      // 1) 계약확정 건 제외
-      // 2) 취소 건은 최근 5건만 포함
-      whereClause = 'WHERE c.migrated_to_contract = 0 AND c.status != ?';
-      bindings.push('completed');
+      // 일반 모드: 진행중인 건 표시 (이관 전까지 모두 표시)
+      // 이관된 건만 제외
+      whereClause = 'WHERE c.migrated_to_contract = 0';
       
       // 통계용 조회 시 이관 건 포함
       if (showAll) {
-        whereClause = 'WHERE c.status != ?';
+        whereClause = 'WHERE 1=1';
         bindings.length = 0;
-        bindings.push('completed');
       }
       
       // 특정 상태 필터링

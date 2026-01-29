@@ -340,7 +340,8 @@ contracts.put('/:id/status', requireAuth, async (c) => {
  */
 contracts.get('/stats/completed', requireAuth, async (c) => {
   try {
-    const result = await c.env.DB
+    // 전체 건수
+    const totalResult = await c.env.DB
       .prepare(`
         SELECT 
           COUNT(*) as count,
@@ -354,12 +355,39 @@ contracts.get('/stats/completed', requireAuth, async (c) => {
       `)
       .first<{ count: number; ids: string }>();
 
-    const count = result?.count || 0;
-    const ids = result?.ids 
-      ? result.ids.split(',').map((id: string) => parseInt(id.trim(), 10)) 
-      : [];
+    // 계약완료 건수
+    const completedResult = await c.env.DB
+      .prepare(`
+        SELECT COUNT(*) as count
+        FROM contracts
+        WHERE status = 'completed'
+        AND (migrated_to_installation = 0 OR migrated_to_installation IS NULL)
+      `)
+      .first<{ count: number }>();
 
-    return c.json({ count, ids });
+    // 선설치 건수
+    const preInstallResult = await c.env.DB
+      .prepare(`
+        SELECT COUNT(*) as count
+        FROM contracts
+        WHERE pre_installation = 1
+        AND (migrated_to_installation = 0 OR migrated_to_installation IS NULL)
+      `)
+      .first<{ count: number }>();
+
+    const count = totalResult?.count || 0;
+    const ids = totalResult?.ids 
+      ? totalResult.ids.split(',').map((id: string) => parseInt(id.trim(), 10)) 
+      : [];
+    const completedCount = completedResult?.count || 0;
+    const preInstallCount = preInstallResult?.count || 0;
+
+    return c.json({ 
+      count, 
+      ids, 
+      completedCount, 
+      preInstallCount 
+    });
   } catch (error) {
     console.error('Get completed stats error:', error);
     return c.json({ error: '통계를 불러올 수 없습니다.' }, 500);

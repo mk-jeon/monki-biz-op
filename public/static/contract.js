@@ -987,13 +987,13 @@ async function loadContractArchiveData(type) {
 async function showMigrateToInstallationModal() {
   try {
     console.log('🚀 설치이관 모달 열기 시도...');
-    // 계약완료 상태 건수 조회
+    // 계약완료 및 선설치 건수 조회
     const response = await axios.get('/api/contracts/stats/completed');
-    const { count, ids } = response.data;
-    console.log(`📊 계약완료 건수: ${count}건, IDs:`, ids);
+    const { count, ids, completedCount, preInstallCount } = response.data;
+    console.log(`📊 전체 건수: ${count}건 (계약완료: ${completedCount}건, 선설치: ${preInstallCount}건), IDs:`, ids);
 
     if (count === 0) {
-      alert('계약완료 상태인 계약이 없습니다.');
+      alert('계약완료 또는 선설치 상태인 계약이 없습니다.');
       return;
     }
 
@@ -1006,11 +1006,15 @@ async function showMigrateToInstallationModal() {
           </h3>
           
           <div class="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-            <p class="text-lg font-semibold text-blue-800 mb-2">
+            <p class="text-lg font-semibold text-blue-800 mb-3">
               <i class="fas fa-check-circle mr-2"></i>
-              계약완료 상태: <span class="text-2xl">${count}</span>건
+              이관 가능: <span class="text-2xl">${count}</span>건
             </p>
-            <p class="text-sm text-blue-600">
+            <div class="space-y-1 text-sm text-blue-700">
+              ${completedCount > 0 ? `<p>• 계약완료: ${completedCount}건</p>` : ''}
+              ${preInstallCount > 0 ? `<p>• 선설치: ${preInstallCount}건</p>` : ''}
+            </div>
+            <p class="text-sm text-blue-600 mt-3">
               해당 계약 건들을 설치현황 페이지로 이관하시겠습니까?
             </p>
           </div>
