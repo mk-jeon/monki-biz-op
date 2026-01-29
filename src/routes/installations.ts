@@ -305,9 +305,13 @@ installations.put('/:id', requireAuth, async (c) => {
         fields.push(`revisit_${suffix}_cost = ?`);
         bindings.push(data[`revisit_${suffix}_cost`] || 0);
       }
-      if (data[`revisit_${suffix}_collected`] !== undefined) {
-        fields.push(`revisit_${suffix}_collected = ?`);
-        bindings.push(data[`revisit_${suffix}_collected`] ? 1 : 0);
+      if (data[`revisit_${suffix}_payment_status`] !== undefined) {
+        fields.push(`revisit_${suffix}_payment_status = ?`);
+        bindings.push(data[`revisit_${suffix}_payment_status`] || 'pending');
+      }
+      if (data[`revisit_${suffix}_payment_note`] !== undefined) {
+        fields.push(`revisit_${suffix}_payment_note = ?`);
+        bindings.push(data[`revisit_${suffix}_payment_note`] || '');
       }
     }
 

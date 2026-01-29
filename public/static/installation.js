@@ -693,16 +693,37 @@ async function showInstallationDetail(id) {
                     if (!needed) return '';
                     const paid = item[`revisit_${suffix}_paid`];
                     const cost = item[`revisit_${suffix}_cost`] || 0;
-                    const collected = item[`revisit_${suffix}_collected`];
+                    const paymentStatus = item[`revisit_${suffix}_payment_status`] || 'pending';
+                    const paymentNote = item[`revisit_${suffix}_payment_note`] || '';
+                    
+                    // 입금상태 표시
+                    let paymentBadge = '';
+                    if (paid) {
+                      if (paymentStatus === 'completed') {
+                        paymentBadge = '<span class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">입금완료</span>';
+                      } else if (paymentStatus === 'rejected') {
+                        paymentBadge = '<span class="text-xs bg-red-100 text-red-700 px-2 py-1 rounded">입금거부</span>';
+                      } else {
+                        paymentBadge = '<span class="text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded">입금대기</span>';
+                      }
+                    }
                     
                     return `
-                      <div class="flex items-center justify-between p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                        <div class="flex items-center space-x-3">
-                          <span class="bg-blue-600 text-white text-xs px-2 py-1 rounded">${i}차</span>
-                          <span class="text-sm font-semibold">${paid ? '유상' : '무상'}</span>
-                          ${cost > 0 ? `<span class="text-sm text-gray-600">${cost.toLocaleString()}원</span>` : ''}
+                      <div class="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                        <div class="flex items-center justify-between mb-2">
+                          <div class="flex items-center space-x-2">
+                            <span class="bg-blue-600 text-white text-xs px-2 py-1 rounded">${i}차</span>
+                            <span class="text-sm font-semibold">${paid ? '유상' : '무상'}</span>
+                            ${cost > 0 ? `<span class="text-sm text-gray-600">${cost.toLocaleString()}원</span>` : ''}
+                          </div>
+                          ${paymentBadge}
                         </div>
-                        ${collected ? '<span class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">수령완료</span>' : '<span class="text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded">미수령</span>'}
+                        ${paymentStatus === 'rejected' && paymentNote ? `
+                          <div class="mt-2 p-2 bg-white rounded border border-red-200">
+                            <p class="text-xs text-gray-600 mb-1">입금거부 사유:</p>
+                            <p class="text-xs text-red-700">${paymentNote}</p>
+                          </div>
+                        ` : ''}
                       </div>
                     `;
                   }).join('')}
@@ -852,54 +873,105 @@ async function showInstallationForm(id) {
 
           <!-- 재방문 관리 -->
           <div class="border-t pt-4">
-            <p class="text-sm font-medium text-gray-700 mb-3">재방문 관리</p>
-            <div class="space-y-3">
-              ${[1, 2, 3, 4, 5].map(i => {
-                const suffix = ['1st', '2nd', '3rd', '4th', '5th'][i - 1];
-                const needed = installation?.[`revisit_${suffix}`] || false;
-                const paid = installation?.[`revisit_${suffix}_paid`] || false;
-                const cost = installation?.[`revisit_${suffix}_cost`] || 0;
-                const collected = installation?.[`revisit_${suffix}_collected`] || false;
+            <p class="text-sm font-medium text-gray-700 mb-2">재방문 관리</p>
+            <p class="text-xs text-gray-500 mb-3">순차적으로 재방문을 체크할 수 있습니다 (1차 → 2차 → 3차 → 4차 → 5차)</p>
+            <div class="space-y-2">
+              ${(() => {
+                // 현재 체크된 재방문 차수 확인
+                let lastChecked = 0;
+                for (let i = 1; i <= 5; i++) {
+                  const suffix = ['1st', '2nd', '3rd', '4th', '5th'][i - 1];
+                  if (installation?.[`revisit_${suffix}`]) {
+                    lastChecked = i;
+                  }
+                }
                 
-                return `
-                  <div class="p-3 bg-gray-50 rounded-lg">
-                    <label class="flex items-center space-x-2 cursor-pointer mb-2">
-                      <input type="checkbox" name="revisit_${suffix}" ${needed ? 'checked' : ''}
-                        onchange="toggleRevisitFields('${suffix}')"
-                        class="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500">
-                      <span class="text-sm font-medium">${i}차 재방문 필요</span>
-                    </label>
-                    
-                    <div id="revisit_${suffix}_fields" class="ml-6 space-y-2 ${needed ? '' : 'hidden'}">
-                      <div class="flex items-center space-x-4">
-                        <label class="flex items-center space-x-2">
-                          <input type="radio" name="revisit_${suffix}_paid" value="0" ${!paid ? 'checked' : ''}
-                            class="w-4 h-4 text-purple-600">
-                          <span class="text-sm">무상</span>
-                        </label>
-                        <label class="flex items-center space-x-2">
-                          <input type="radio" name="revisit_${suffix}_paid" value="1" ${paid ? 'checked' : ''}
-                            class="w-4 h-4 text-purple-600">
-                          <span class="text-sm">유상</span>
-                        </label>
-                      </div>
-                      
-                      <div class="flex items-center space-x-2">
-                        <label class="text-sm text-gray-600 w-20">비용:</label>
-                        <input type="number" name="revisit_${suffix}_cost" value="${cost}" min="0" step="1000"
-                          class="flex-1 px-3 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-purple-500 text-sm">
-                        <span class="text-sm text-gray-600">원</span>
-                      </div>
-                      
-                      <label class="flex items-center space-x-2">
-                        <input type="checkbox" name="revisit_${suffix}_collected" ${collected ? 'checked' : ''}
-                          class="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500">
-                        <span class="text-sm">비용 수령 완료</span>
+                return [1, 2, 3, 4, 5].map(i => {
+                  const suffix = ['1st', '2nd', '3rd', '4th', '5th'][i - 1];
+                  const needed = installation?.[`revisit_${suffix}`] || false;
+                  const paid = installation?.[`revisit_${suffix}_paid`] || false;
+                  const cost = installation?.[`revisit_${suffix}_cost`] || 0;
+                  const paymentStatus = installation?.[`revisit_${suffix}_payment_status`] || 'pending';
+                  const paymentNote = installation?.[`revisit_${suffix}_payment_note`] || '';
+                  
+                  // 활성화 조건: 첫 번째(1차)이거나, 이전 차수가 체크되어 있으면 활성화
+                  const enabled = (i === 1) || (i === lastChecked + 1);
+                  const disabled = !enabled;
+                  
+                  return `
+                    <div class="p-2 ${disabled ? 'bg-gray-100' : 'bg-blue-50'} rounded border ${disabled ? 'border-gray-200' : 'border-blue-200'}">
+                      <label class="flex items-center space-x-2 cursor-pointer">
+                        <input type="checkbox" 
+                          name="revisit_${suffix}" 
+                          ${needed ? 'checked' : ''} 
+                          ${disabled ? 'disabled' : ''}
+                          onchange="toggleRevisitFields_v2('${suffix}', ${i})"
+                          class="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500 ${disabled ? 'cursor-not-allowed opacity-50' : ''}">
+                        <span class="text-sm font-medium ${disabled ? 'text-gray-400' : 'text-gray-700'}">${i}차 재방문</span>
+                        ${disabled ? '<span class="text-xs text-gray-400 ml-2">(이전 차수를 먼저 체크하세요)</span>' : ''}
                       </label>
+                      
+                      <div id="revisit_${suffix}_fields" class="ml-6 mt-2 space-y-2 ${needed ? '' : 'hidden'}">
+                        <!-- 유/무상 선택 -->
+                        <div class="flex items-center space-x-4">
+                          <label class="flex items-center space-x-2">
+                            <input type="radio" 
+                              name="revisit_${suffix}_paid" 
+                              value="0" 
+                              ${!paid ? 'checked' : ''}
+                              onchange="togglePaidFields_v2('${suffix}')"
+                              class="w-4 h-4 text-purple-600">
+                            <span class="text-sm">무상</span>
+                          </label>
+                          <label class="flex items-center space-x-2">
+                            <input type="radio" 
+                              name="revisit_${suffix}_paid" 
+                              value="1" 
+                              ${paid ? 'checked' : ''}
+                              onchange="togglePaidFields_v2('${suffix}')"
+                              class="w-4 h-4 text-purple-600">
+                            <span class="text-sm">유상</span>
+                          </label>
+                        </div>
+                        
+                        <!-- 유상인 경우 비용 입력 및 입금상태 -->
+                        <div id="revisit_${suffix}_paid_fields" class="space-y-2 ${paid ? '' : 'hidden'}">
+                          <div class="flex items-center space-x-2">
+                            <label class="text-xs text-gray-600 w-16">비용:</label>
+                            <input type="number" 
+                              name="revisit_${suffix}_cost" 
+                              value="${cost}" 
+                              min="0" 
+                              step="1000"
+                              class="flex-1 px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-purple-500 text-sm">
+                            <span class="text-xs text-gray-600">원</span>
+                          </div>
+                          
+                          <div>
+                            <label class="text-xs text-gray-600 block mb-1">입금상태:</label>
+                            <select name="revisit_${suffix}_payment_status"
+                              onchange="togglePaymentNote_v2('${suffix}')"
+                              class="w-full px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-purple-500 text-sm">
+                              <option value="pending" ${paymentStatus === 'pending' ? 'selected' : ''}>입금대기</option>
+                              <option value="completed" ${paymentStatus === 'completed' ? 'selected' : ''}>입금완료</option>
+                              <option value="rejected" ${paymentStatus === 'rejected' ? 'selected' : ''}>입금거부/비고</option>
+                            </select>
+                          </div>
+                          
+                          <!-- 입금거부 시 비고란 -->
+                          <div id="revisit_${suffix}_payment_note_field" class="${paymentStatus === 'rejected' ? '' : 'hidden'}">
+                            <label class="text-xs text-gray-600 block mb-1">비고 (필수, 2글자 이상):</label>
+                            <textarea name="revisit_${suffix}_payment_note"
+                              rows="2"
+                              class="w-full px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-purple-500 text-sm"
+                              placeholder="입금거부 사유를 입력하세요 (최소 2글자)">${paymentNote}</textarea>
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                `;
-              }).join('')}
+                  `;
+                }).join('');
+              })()}
             </div>
           </div>
 
@@ -925,12 +997,68 @@ async function showInstallationForm(id) {
     </div>
 
     <script>
-      // 재방문 필드 토글
-      function toggleRevisitFields(suffix) {
+      // 재방문 필드 토글 (v2 - 순차 활성화 지원)
+      function toggleRevisitFields_v2(suffix, order) {
         const checkbox = document.querySelector(\`input[name="revisit_\${suffix}"]\`);
         const fields = document.getElementById(\`revisit_\${suffix}_fields\`);
+        
         if (fields) {
           fields.classList.toggle('hidden', !checkbox.checked);
+        }
+        
+        // 체크된 경우: 다음 차수 활성화
+        // 체크 해제된 경우: 다음 차수들 비활성화 및 체크 해제
+        if (checkbox.checked) {
+          // 다음 차수 활성화
+          const nextOrder = order + 1;
+          if (nextOrder <= 5) {
+            const nextSuffix = ['1st', '2nd', '3rd', '4th', '5th'][nextOrder - 1];
+            const nextCheckbox = document.querySelector(\`input[name="revisit_\${nextSuffix}"]\`);
+            const nextContainer = nextCheckbox?.closest('.p-2');
+            if (nextCheckbox && nextContainer) {
+              nextCheckbox.disabled = false;
+              nextContainer.classList.remove('bg-gray-100', 'opacity-50');
+              nextContainer.classList.add('bg-blue-50', 'border-blue-200');
+            }
+          }
+        } else {
+          // 현재 차수 이후 모두 비활성화 및 체크 해제
+          for (let i = order + 1; i <= 5; i++) {
+            const targetSuffix = ['1st', '2nd', '3rd', '4th', '5th'][i - 1];
+            const targetCheckbox = document.querySelector(\`input[name="revisit_\${targetSuffix}"]\`);
+            const targetFields = document.getElementById(\`revisit_\${targetSuffix}_fields\`);
+            const targetContainer = targetCheckbox?.closest('.p-2');
+            
+            if (targetCheckbox) {
+              targetCheckbox.checked = false;
+              targetCheckbox.disabled = true;
+              if (targetFields) targetFields.classList.add('hidden');
+              if (targetContainer) {
+                targetContainer.classList.add('bg-gray-100', 'opacity-50');
+                targetContainer.classList.remove('bg-blue-50', 'border-blue-200');
+              }
+            }
+          }
+        }
+      }
+      
+      // 유상/무상 필드 토글
+      function togglePaidFields_v2(suffix) {
+        const paidRadio = document.querySelector(\`input[name="revisit_\${suffix}_paid"][value="1"]\`);
+        const paidFields = document.getElementById(\`revisit_\${suffix}_paid_fields\`);
+        
+        if (paidFields) {
+          paidFields.classList.toggle('hidden', !paidRadio.checked);
+        }
+      }
+      
+      // 입금상태 비고란 토글
+      function togglePaymentNote_v2(suffix) {
+        const paymentStatus = document.querySelector(\`select[name="revisit_\${suffix}_payment_status"]\`).value;
+        const noteField = document.getElementById(\`revisit_\${suffix}_payment_note_field\`);
+        
+        if (noteField) {
+          noteField.classList.toggle('hidden', paymentStatus !== 'rejected');
         }
       }
 
@@ -951,18 +1079,46 @@ async function showInstallationForm(id) {
           has_confirmation_doc: formData.get('has_confirmation_doc') === 'on',
           has_photos: formData.get('has_photos') === 'on',
           has_drive_upload: formData.get('has_drive_upload') === 'on',
-          
-          // 재방문 (1~5차)
-          ${[1, 2, 3, 4, 5].map(i => {
-            const suffix = ['1st', '2nd', '3rd', '4th', '5th'][i - 1];
-            return `
-              revisit_${suffix}: formData.get('revisit_${suffix}') === 'on',
-              revisit_${suffix}_paid: parseInt(formData.get('revisit_${suffix}_paid') || '0'),
-              revisit_${suffix}_cost: parseInt(formData.get('revisit_${suffix}_cost') || '0'),
-              revisit_${suffix}_collected: formData.get('revisit_${suffix}_collected') === 'on',
-            `;
-          }).join('')}
         };
+        
+        // 재방문 데이터 (1~5차)
+        const suffixes = ['1st', '2nd', '3rd', '4th', '5th'];
+        for (let i = 0; i < 5; i++) {
+          const suffix = suffixes[i];
+          const isNeeded = formData.get(\`revisit_\${suffix}\`) === 'on';
+          
+          data[\`revisit_\${suffix}\`] = isNeeded;
+          
+          if (isNeeded) {
+            const isPaid = parseInt(formData.get(\`revisit_\${suffix}_paid\`) || '0');
+            data[\`revisit_\${suffix}_paid\`] = isPaid;
+            
+            if (isPaid) {
+              const cost = parseInt(formData.get(\`revisit_\${suffix}_cost\`) || '0');
+              const paymentStatus = formData.get(\`revisit_\${suffix}_payment_status\`) || 'pending';
+              const paymentNote = formData.get(\`revisit_\${suffix}_payment_note\`) || '';
+              
+              data[\`revisit_\${suffix}_cost\`] = cost;
+              data[\`revisit_\${suffix}_payment_status\`] = paymentStatus;
+              data[\`revisit_\${suffix}_payment_note\`] = paymentNote;
+              
+              // 입금거부 시 비고 필수 검증 (2글자 이상)
+              if (paymentStatus === 'rejected' && paymentNote.trim().length < 2) {
+                alert(\`\${i + 1}차 재방문: 입금거부 시 비고를 2글자 이상 입력해야 합니다.\`);
+                return;
+              }
+            } else {
+              data[\`revisit_\${suffix}_cost\`] = 0;
+              data[\`revisit_\${suffix}_payment_status\`] = 'pending';
+              data[\`revisit_\${suffix}_payment_note\`] = '';
+            }
+          } else {
+            data[\`revisit_\${suffix}_paid\`] = 0;
+            data[\`revisit_\${suffix}_cost\`] = 0;
+            data[\`revisit_\${suffix}_payment_status\`] = 'pending';
+            data[\`revisit_\${suffix}_payment_note\`] = '';
+          }
+        }
 
         try {
           if (${isEdit}) {
