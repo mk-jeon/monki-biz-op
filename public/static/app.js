@@ -254,6 +254,12 @@ function loadPage(page, addToHistory = true) {
     return;
   }
 
+  // 계약현황인 경우
+  if (page === 'contract') {
+    loadContractPage();
+    return;
+  }
+
   // 다른 페이지 (준비중)
   mainContent.innerHTML = `
     <div class="bg-white rounded-lg shadow-md p-8 text-center">
@@ -291,13 +297,27 @@ renderMenu();
  */
 async function loadDashboardData() {
   try {
-    // 상담현황 건수 조회
+    // 상담현황 건수 조회 (미이관 건만 = 진행중)
     const consultingResponse = await axios.get('/api/consultations?page=1&limit=1');
     const consultingCount = consultingResponse.data.pagination?.total || 0;
     
     const consultingElement = document.getElementById('consultingCount');
     if (consultingElement) {
       consultingElement.textContent = consultingCount;
+    }
+    
+    // 계약현황 건수 조회 (미이관 건만 = 진행중)
+    try {
+      const contractResponse = await axios.get('/api/contracts?page=1&limit=1');
+      const contractCount = contractResponse.data.pagination?.total || 0;
+      
+      const contractElement = document.getElementById('contractCount');
+      if (contractElement) {
+        contractElement.textContent = contractCount;
+      }
+    } catch (error) {
+      // 계약현황 API 없을 경우 무시
+      console.log('Contract API not available yet');
     }
   } catch (error) {
     console.error('Dashboard data load error:', error);

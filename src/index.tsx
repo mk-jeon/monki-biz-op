@@ -242,7 +242,9 @@ app.get('/', async (c) => {
                     <i class="fas fa-file-contract text-green-600 text-2xl"></i>
                   </div>
                 </div>
-                <p class="text-3xl font-bold text-gray-900 mb-2">0</p>
+                <p id="contractCount" class="text-3xl font-bold text-gray-900 mb-2">
+                  <i class="fas fa-spinner fa-spin text-gray-400"></i>
+                </p>
                 <p class="text-sm text-gray-600">진행중인 계약</p>
               </div>
 
@@ -293,6 +295,7 @@ app.get('/', async (c) => {
       </script>
       <script src="/static/notice.js"></script>
       <script src="/static/consultation.js"></script>
+      <script src="/static/contract.js"></script>
       <script src="/static/app.js"></script>
     </body>
     </html>

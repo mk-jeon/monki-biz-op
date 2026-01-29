@@ -13,13 +13,20 @@ contracts.get('/', requireAuth, async (c) => {
     const page = parseInt(c.req.query('page') || '1');
     const limit = parseInt(c.req.query('limit') || '50');
     const status = c.req.query('status') || '';
+    const showAll = c.req.query('show_all') === 'true'; // 통계용
     const offset = (page - 1) * limit;
 
-    let whereClause = '';
+    // WHERE 조건: 기본적으로 미이관 건만 표시
+    let whereClause = 'WHERE c.migrated_to_installation = 0';
     const bindings = [];
     
+    // 통계용 조회 시 이관 건 포함
+    if (showAll) {
+      whereClause = '';
+    }
+    
     if (status) {
-      whereClause = 'WHERE c.status = ?';
+      whereClause += (whereClause ? ' AND' : 'WHERE') + ' c.status = ?';
       bindings.push(status);
     }
 
@@ -151,13 +158,13 @@ contracts.post('/migrate', requireAuth, async (c) => {
       try {
         // 상담 정보 조회
         const consultation = await c.env.DB
-          .prepare('SELECT * FROM consultations WHERE id = ? AND status = ?')
+          .prepare('SELECT * FROM consultations WHERE id = ? AND status = ? AND migrated_to_contract = 0')
           .bind(consultationId, 'completed')
           .first();
 
         if (!consultation) {
           errorCount++;
-          errors.push(`상담 ID ${consultationId}: 계약확정 상태가 아닙니다.`);
+          errors.push(`상담 ID ${consultationId}: 계약확정 상태가 아니거나 이미 이관되었습니다.`);
           continue;
         }
 
@@ -176,6 +183,16 @@ contracts.post('/migrate', requireAuth, async (c) => {
             consultation.notes || '',
             user.id
           )
+          .run();
+
+        // 상담현황에 이관 플래그 설정
+        await c.env.DB
+          .prepare(`
+            UPDATE consultations 
+            SET migrated_to_contract = 1, migrated_at = CURRENT_TIMESTAMP
+            WHERE id = ?
+          `)
+          .bind(consultationId)
           .run();
 
         successCount++;

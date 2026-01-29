@@ -13,14 +13,20 @@ consultations.get('/', requireAuth, async (c) => {
     const page = parseInt(c.req.query('page') || '1');
     const limit = parseInt(c.req.query('limit') || '50');
     const status = c.req.query('status') || '';
+    const showAll = c.req.query('show_all') === 'true'; // 통계용: 이관 건 포함
     const offset = (page - 1) * limit;
 
-    // WHERE 조건
-    let whereClause = '';
+    // WHERE 조건: 기본적으로 미이관 건만 표시
+    let whereClause = 'WHERE c.migrated_to_contract = 0';
     const bindings = [];
     
+    // 통계용 조회 시 이관 건 포함
+    if (showAll) {
+      whereClause = '';
+    }
+    
     if (status) {
-      whereClause = 'WHERE c.status = ?';
+      whereClause += (whereClause ? ' AND' : 'WHERE') + ' c.status = ?';
       bindings.push(status);
     }
 
