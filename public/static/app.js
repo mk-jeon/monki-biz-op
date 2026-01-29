@@ -485,3 +485,249 @@ async function loadDashboardData() {
 if (document.getElementById('consultingCount')) {
   loadDashboardData();
 }
+
+/**
+ * 프로필 수정 모달 표시
+ */
+async function showProfileModal() {
+  try {
+    // 현재 사용자 정보 조회
+    const response = await axios.get('/api/auth/me');
+    const user = response.data.user;
+
+    const modal = document.createElement('div');
+    modal.id = 'profileModal';
+    modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4';
+    modal.innerHTML = `
+      <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <div class="sticky top-0 bg-white border-b p-6 flex items-center justify-between">
+          <h2 class="text-2xl font-bold text-gray-800">
+            <i class="fas fa-user-edit mr-2 text-indigo-600"></i>프로필 수정
+          </h2>
+          <button onclick="closeProfileModal()" class="text-gray-400 hover:text-gray-600">
+            <i class="fas fa-times text-2xl"></i>
+          </button>
+        </div>
+
+        <form id="profileForm" class="p-6 space-y-6">
+          <!-- 기본 정보 -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- 이름 (한글) -->
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-2">
+                <i class="fas fa-user mr-2"></i>이름 (한글)
+              </label>
+              <input
+                type="text"
+                id="profileName"
+                value="${user.name || ''}"
+                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                placeholder="홍길동"
+              />
+            </div>
+
+            <!-- 닉네임 (영문) -->
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-2">
+                <i class="fas fa-id-badge mr-2"></i>닉네임 (영문)
+              </label>
+              <input
+                type="text"
+                id="profileNickname"
+                value="${user.nickname || ''}"
+                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                placeholder="honggildong"
+              />
+            </div>
+
+            <!-- 연락처 -->
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-2">
+                <i class="fas fa-phone mr-2"></i>연락처
+              </label>
+              <input
+                type="tel"
+                id="profilePhone"
+                value="${user.phone || ''}"
+                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                placeholder="010-1234-5678"
+              />
+            </div>
+
+            <!-- 부서명 -->
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-2">
+                <i class="fas fa-building mr-2"></i>부서명
+              </label>
+              <select
+                id="profileDepartment"
+                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              >
+                <option value="">선택하세요</option>
+                <option value="디지털사업본부" ${user.department === '디지털사업본부' ? 'selected' : ''}>디지털사업본부</option>
+                <option value="마케팅팀" ${user.department === '마케팅팀' ? 'selected' : ''}>마케팅팀</option>
+                <option value="디지털사업팀" ${user.department === '디지털사업팀' ? 'selected' : ''}>디지털사업팀</option>
+                <option value="운영파트" ${user.department === '운영파트' ? 'selected' : ''}>운영파트</option>
+              </select>
+            </div>
+
+            <!-- 직책 -->
+            <div class="md:col-span-2">
+              <label class="block text-sm font-semibold text-gray-700 mb-2">
+                <i class="fas fa-briefcase mr-2"></i>직책
+              </label>
+              <select
+                id="profilePosition"
+                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              >
+                <option value="">선택하세요</option>
+                <option value="스태프" ${user.position === '스태프' ? 'selected' : ''}>스태프</option>
+                <option value="시니어" ${user.position === '시니어' ? 'selected' : ''}>시니어</option>
+                <option value="프로" ${user.position === '프로' ? 'selected' : ''}>프로</option>
+                <option value="매니저" ${user.position === '매니저' ? 'selected' : ''}>매니저</option>
+                <option value="파트장" ${user.position === '파트장' ? 'selected' : ''}>파트장</option>
+                <option value="팀장" ${user.position === '팀장' ? 'selected' : ''}>팀장</option>
+                <option value="그룹장" ${user.position === '그룹장' ? 'selected' : ''}>그룹장</option>
+                <option value="본부장" ${user.position === '본부장' ? 'selected' : ''}>본부장</option>
+                <option value="CTO" ${user.position === 'CTO' ? 'selected' : ''}>CTO</option>
+                <option value="SEVP" ${user.position === 'SEVP' ? 'selected' : ''}>SEVP</option>
+                <option value="CEO" ${user.position === 'CEO' ? 'selected' : ''}>CEO</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- 비밀번호 변경 -->
+          <div class="border-t pt-6">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4">
+              <i class="fas fa-lock mr-2"></i>비밀번호 변경 (선택)
+            </h3>
+            <p class="text-sm text-gray-600 mb-4">
+              * 비밀번호를 변경하지 않으려면 비워두세요.<br>
+              * 비밀번호를 잊으신 경우 관리자에게 문의하세요.
+            </p>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <!-- 새 비밀번호 -->
+              <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">
+                  새 비밀번호
+                </label>
+                <input
+                  type="password"
+                  id="profileNewPassword"
+                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  placeholder="새 비밀번호"
+                />
+              </div>
+
+              <!-- 새 비밀번호 확인 -->
+              <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">
+                  새 비밀번호 확인
+                </label>
+                <input
+                  type="password"
+                  id="profileConfirmPassword"
+                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  placeholder="새 비밀번호 확인"
+                />
+              </div>
+            </div>
+          </div>
+
+          <!-- 버튼 -->
+          <div class="flex justify-end space-x-3 pt-6 border-t">
+            <button
+              type="button"
+              onclick="closeProfileModal()"
+              class="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition"
+            >
+              취소
+            </button>
+            <button
+              type="submit"
+              class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition"
+            >
+              <i class="fas fa-save mr-2"></i>저장
+            </button>
+          </div>
+        </form>
+      </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    // 폼 제출 이벤트
+    document.getElementById('profileForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      await updateProfile();
+    });
+  } catch (error) {
+    console.error('프로필 모달 표시 오류:', error);
+    alert('프로필 정보를 불러올 수 없습니다.');
+  }
+}
+
+/**
+ * 프로필 수정 모달 닫기
+ */
+function closeProfileModal() {
+  const modal = document.getElementById('profileModal');
+  if (modal) {
+    modal.remove();
+  }
+}
+
+/**
+ * 프로필 업데이트
+ */
+async function updateProfile() {
+  try {
+    const name = document.getElementById('profileName').value.trim();
+    const nickname = document.getElementById('profileNickname').value.trim();
+    const phone = document.getElementById('profilePhone').value.trim();
+    const department = document.getElementById('profileDepartment').value;
+    const position = document.getElementById('profilePosition').value;
+    const newPassword = document.getElementById('profileNewPassword').value;
+    const confirmPassword = document.getElementById('profileConfirmPassword').value;
+
+    // 비밀번호 변경 시 확인
+    if (newPassword || confirmPassword) {
+      if (newPassword !== confirmPassword) {
+        alert('새 비밀번호가 일치하지 않습니다.');
+        return;
+      }
+    }
+
+    const data = {
+      name,
+      nickname,
+      phone,
+      department,
+      position
+    };
+
+    // 비밀번호 변경 요청이 있는 경우
+    if (newPassword) {
+      data.newPassword = newPassword;
+      data.confirmPassword = confirmPassword;
+    }
+
+    const response = await axios.put('/api/auth/profile', data);
+
+    if (response.data.success) {
+      alert('프로필이 수정되었습니다.');
+      closeProfileModal();
+      
+      // 화면 새로고침 (사용자 정보 업데이트 반영)
+      window.location.reload();
+    }
+  } catch (error) {
+    console.error('프로필 수정 오류:', error);
+    alert(error.response?.data?.error || '프로필 수정 중 오류가 발생했습니다.');
+  }
+}
+
+// Window에 함수 노출
+window.showProfileModal = showProfileModal;
+window.closeProfileModal = closeProfileModal;
+window.updateProfile = updateProfile;

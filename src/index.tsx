@@ -208,7 +208,14 @@ app.get('/', async (c) => {
             <div class="flex items-center justify-between">
               <h1 class="text-xl font-bold text-gray-800" id="pageTitle">대시보드</h1>
               <div class="flex items-center space-x-4">
-                <span class="text-sm text-gray-600">${user.name} (${user.role})</span>
+                <button 
+                  onclick="showProfileModal()" 
+                  class="flex items-center space-x-2 text-sm text-gray-600 hover:text-indigo-600 transition cursor-pointer"
+                  title="프로필 수정"
+                >
+                  <i class="fas fa-user-circle text-xl"></i>
+                  <span>${user.name} (${user.role})</span>
+                </button>
                 <button id="headerLogoutButton" class="text-red-600 hover:text-red-800 transition">
                   <i class="fas fa-sign-out-alt"></i> 로그아웃
                 </button>

@@ -78,9 +78,98 @@ auth.get('/me', requireAuth, async (c) => {
       id: user.id,
       username: user.username,
       name: user.name,
-      role: user.role
+      role: user.role,
+      nickname: user.nickname,
+      phone: user.phone,
+      department: user.department,
+      position: user.position
     }
   });
+});
+
+/**
+ * PUT /api/auth/profile
+ * 프로필 수정
+ */
+auth.put('/profile', requireAuth, async (c) => {
+  try {
+    const user = c.get('user');
+    const data = await c.req.json();
+
+    // 업데이트할 필드 준비
+    const fields: string[] = [];
+    const bindings: any[] = [];
+
+    // 이름 (한글)
+    if (data.name !== undefined) {
+      fields.push('name = ?');
+      bindings.push(data.name);
+    }
+
+    // 닉네임 (영문)
+    if (data.nickname !== undefined) {
+      fields.push('nickname = ?');
+      bindings.push(data.nickname);
+    }
+
+    // 연락처
+    if (data.phone !== undefined) {
+      fields.push('phone = ?');
+      bindings.push(data.phone);
+    }
+
+    // 부서명
+    if (data.department !== undefined) {
+      fields.push('department = ?');
+      bindings.push(data.department);
+    }
+
+    // 직책
+    if (data.position !== undefined) {
+      fields.push('position = ?');
+      bindings.push(data.position);
+    }
+
+    // 비밀번호 변경 (새 비밀번호와 확인이 일치하는 경우)
+    if (data.newPassword && data.confirmPassword) {
+      if (data.newPassword !== data.confirmPassword) {
+        return c.json({ error: '새 비밀번호가 일치하지 않습니다.' }, 400);
+      }
+
+      // bcrypt로 해시
+      const bcrypt = await import('bcryptjs');
+      const hashedPassword = await bcrypt.hash(data.newPassword, 10);
+      
+      fields.push('password = ?');
+      bindings.push(hashedPassword);
+    }
+
+    if (fields.length === 0) {
+      return c.json({ error: '수정할 내용이 없습니다.' }, 400);
+    }
+
+    // updated_at 추가
+    fields.push('updated_at = CURRENT_TIMESTAMP');
+
+    // SQL 실행
+    bindings.push(user.id);
+    const sql = `UPDATE users SET ${fields.join(', ')} WHERE id = ?`;
+    
+    await c.env.DB.prepare(sql).bind(...bindings).run();
+
+    // 업데이트된 사용자 정보 조회
+    const updatedUser = await c.env.DB.prepare(
+      'SELECT id, username, name, nickname, phone, department, position, role FROM users WHERE id = ?'
+    ).bind(user.id).first();
+
+    return c.json({ 
+      success: true,
+      user: updatedUser
+    });
+  } catch (error) {
+    console.error('Profile update error:', error);
+    return c.json({ error: '프로필 수정 중 오류가 발생했습니다.' }, 500);
+  }
 });
 
 export default auth;
