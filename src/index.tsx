@@ -293,10 +293,10 @@ app.get('/', async (c) => {
         // 사용자 정보
         const currentUser = ${JSON.stringify({ id: user.id, username: user.username, name: user.name, role: user.role })};
       </script>
-      <script src="/static/notice.js"></script>
-      <script src="/static/consultation.js"></script>
-      <script src="/static/contract.js"></script>
-      <script src="/static/app.js"></script>
+      <script src="/static/notice.js?v=${Date.now()}"></script>
+      <script src="/static/consultation.js?v=${Date.now()}"></script>
+      <script src="/static/contract.js?v=${Date.now()}"></script>
+      <script src="/static/app.js?v=${Date.now()}"></script>
     </body>
     </html>
   `);

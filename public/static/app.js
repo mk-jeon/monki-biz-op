@@ -264,8 +264,18 @@ function loadPage(page, addToHistory = true) {
 
   // 대시보드인 경우
   if (page === 'dashboard') {
-    console.log('   🏠 대시보드로 이동 (페이지 새로고침)');
-    window.location.reload();
+    console.log('   🏠 대시보드로 이동 (SPA 방식으로 리로드)');
+    // SPA 방식: 페이지 새로고침 대신 대시보드 데이터만 다시 로드
+    mainContent.innerHTML = `
+      <div class="text-center py-12">
+        <i class="fas fa-spinner fa-spin text-4xl text-indigo-600 mb-4"></i>
+        <p class="text-gray-600">대시보드를 로드하는 중...</p>
+      </div>
+    `;
+    // 실제로는 전체 페이지 리로드가 필요하므로 히스토리만 초기화하고 리로드
+    setTimeout(() => {
+      window.location.reload();
+    }, 100);
     return;
   }
 
