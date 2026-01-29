@@ -285,3 +285,30 @@ document.getElementById('logoutButton').addEventListener('click', async () => {
 
 // 초기화
 renderMenu();
+
+/**
+ * 대시보드 데이터 로드
+ */
+async function loadDashboardData() {
+  try {
+    // 상담현황 건수 조회
+    const consultingResponse = await axios.get('/api/consultations?page=1&limit=1');
+    const consultingCount = consultingResponse.data.pagination?.total || 0;
+    
+    const consultingElement = document.getElementById('consultingCount');
+    if (consultingElement) {
+      consultingElement.textContent = consultingCount;
+    }
+  } catch (error) {
+    console.error('Dashboard data load error:', error);
+    const consultingElement = document.getElementById('consultingCount');
+    if (consultingElement) {
+      consultingElement.textContent = '0';
+    }
+  }
+}
+
+// 페이지 로드 시 대시보드 데이터 로드
+if (document.getElementById('consultingCount')) {
+  loadDashboardData();
+}
