@@ -1,16 +1,4 @@
-// 계약현황 모듈 - IIFE로 스코프 격리하여 중복 선언 방지
-(function() {
-  'use strict';
-  
-  // 중복 로드 방지
-  if (window.__CONTRACT_MODULE_LOADED__) {
-    console.warn('⚠️ contract.js가 이미 로드되어 있습니다. 중복 로드 방지.');
-    return;
-  }
-  window.__CONTRACT_MODULE_LOADED__ = true;
-  
-  console.log('🔵 contract.js 모듈 로드 시작 (IIFE 스코프)');
-
+// 계약현황 관련 함수
 
 /**
  * 날짜 포맷 함수 (notice.js와 동일)
@@ -63,6 +51,9 @@ async function loadContractPage() {
 console.log('🟢 loadContractPage 함수 정의 완료');
 
 // 즉시 window에 바인딩
+window.loadContractPage = loadContractPage;
+console.log('🟢 loadContractPage → window 바인딩 완료');
+
 /**
  * 유입경로 목록 로드
  */
@@ -767,23 +758,16 @@ async function handleContractDrop(e) {
   return false;
 }
 
+// 전역 함수로 명시적 바인딩 (브라우저 호환성)
+window.loadContractPage = loadContractPage;
+window.loadContractList = loadContractList;
+window.loadContractKanban = loadContractKanban;
+window.toggleContractViewMode = toggleContractViewMode;
+window.showContractForm = showContractForm;
+window.submitContract = submitContract;
+window.updateContract = updateContract;
+window.deleteContract = deleteContract;
+window.showContractDetail = showContractDetail;
+window.closeContractDetailModal = closeContractDetailModal;
 
-  // ===========================================
-  // 전역 객체에 함수 노출 (window.*)
-  // ===========================================
-  console.log('🟢 계약현황 함수들을 window 객체에 바인딩 중...');
-  
-  window.loadContractPage = loadContractPage;
-  window.loadContractList = loadContractList;
-  window.loadContractKanban = loadContractKanban;
-  window.toggleContractViewMode = toggleContractViewMode;
-  window.showContractForm = showContractForm;
-  window.submitContract = submitContract;
-  window.updateContract = updateContract;
-  window.deleteContract = deleteContract;
-  window.showContractDetail = showContractDetail;
-  window.closeContractDetailModal = closeContractDetailModal;
-  
-  console.log('✅ 계약현황 모듈 로드 완료 - 모든 함수가 window 객체에 바인딩됨');
-  
-})(); // IIFE 즉시 실행
+console.log('✅ 계약현황 모듈 로드 완료 - 함수들이 window 객체에 바인딩됨');
