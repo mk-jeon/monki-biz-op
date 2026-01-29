@@ -242,6 +242,12 @@ function loadPage(page, addToHistory = true) {
     return;
   }
 
+  // 공지사항인 경우
+  if (page === 'notice') {
+    loadNoticeList(1);
+    return;
+  }
+
   // 다른 페이지 (준비중)
   mainContent.innerHTML = `
     <div class="bg-white rounded-lg shadow-md p-8 text-center">

@@ -4,6 +4,7 @@ import { serveStatic } from 'hono/cloudflare-workers';
 import type { Bindings, Variables } from './types';
 import { authMiddleware } from './middleware/auth';
 import authRoutes from './routes/auth';
+import noticeRoutes from './routes/notices';
 
 const app = new Hono<{ Bindings: Bindings; Variables: Variables }>();
 
@@ -15,6 +16,7 @@ app.use('*', authMiddleware);
 
 // API 라우트
 app.route('/api/auth', authRoutes);
+app.route('/api/notices', noticeRoutes);
 
 // 정적 파일 제공
 app.use('/static/*', serveStatic({ root: './public' }));
@@ -31,7 +33,7 @@ app.get('/', async (c) => {
       <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>몽키비즈옵 - 로그인</title>
+        <title>MONKi Biz Operation - 로그인</title>
         <script src="https://cdn.tailwindcss.com"></script>
         <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
       </head>
@@ -41,8 +43,8 @@ app.get('/', async (c) => {
             <div class="inline-block p-4 bg-indigo-600 rounded-full mb-4">
               <i class="fas fa-briefcase text-white text-4xl"></i>
             </div>
-            <h1 class="text-3xl font-bold text-gray-800">몽키비즈옵</h1>
-            <p class="text-gray-600 mt-2">통합 업무 플랫폼</p>
+            <h1 class="text-3xl font-bold text-gray-800">MONKi Biz Operation</h1>
+            <p class="text-gray-600 mt-2">사업운영본부 통합 업무 플랫폼</p>
           </div>
 
           <form id="loginForm" class="space-y-6">
@@ -106,7 +108,7 @@ app.get('/', async (c) => {
     <head>
       <meta charset="UTF-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>몽키비즈옵 - 대시보드</title>
+      <title>MONKi Biz Operation - 대시보드</title>
       <script src="https://cdn.tailwindcss.com"></script>
       <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
       <style>
@@ -153,7 +155,7 @@ app.get('/', async (c) => {
               <div class="bg-indigo-700 p-2 rounded-lg">
                 <i class="fas fa-briefcase text-xl"></i>
               </div>
-              <span class="menu-text font-bold text-lg">몽키비즈옵</span>
+              <span class="menu-text font-bold text-lg">MONKi Biz OP</span>
             </div>
             <button id="toggleSidebar" class="hover:bg-indigo-800 p-2 rounded-lg transition">
               <i class="fas fa-bars"></i>
@@ -283,6 +285,7 @@ app.get('/', async (c) => {
         // 사용자 정보
         const currentUser = ${JSON.stringify({ id: user.id, username: user.username, name: user.name, role: user.role })};
       </script>
+      <script src="/static/notice.js"></script>
       <script src="/static/app.js"></script>
     </body>
     </html>
