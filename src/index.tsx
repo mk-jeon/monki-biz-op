@@ -157,22 +157,22 @@ app.get('/', async (c) => {
     <body class="bg-gray-50">
       <div class="flex h-screen overflow-hidden">
         <!-- 좌측 사이드바 -->
-        <aside id="sidebar" class="sidebar bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 text-white flex flex-col shadow-2xl">
+        <aside id="sidebar" class="sidebar bg-gradient-to-b from-gray-900 via-gray-800 to-black text-white flex flex-col shadow-2xl">
           <!-- 상단 헤더 -->
-          <div class="p-4 border-b border-slate-700 flex items-center justify-between backdrop-blur-sm">
+          <div class="p-4 border-b border-gray-800 flex items-center justify-between backdrop-blur-sm">
             <div class="flex items-center space-x-3">
               <div class="bg-gradient-to-br from-indigo-500 to-purple-600 p-2 rounded-xl shadow-lg">
                 <i class="fas fa-briefcase text-xl"></i>
               </div>
               <span class="menu-text font-bold text-lg bg-gradient-to-r from-white to-indigo-200 bg-clip-text text-transparent">MONKi Biz OP</span>
             </div>
-            <button id="toggleSidebar" class="hover:bg-slate-700 p-2 rounded-lg transition duration-200">
+            <button id="toggleSidebar" class="hover:bg-gray-700 p-2 rounded-lg transition duration-200">
               <i class="fas fa-bars"></i>
             </button>
           </div>
 
           <!-- 사용자 정보 -->
-          <div class="p-4 border-b border-slate-700 bg-gradient-to-r from-slate-800 to-slate-700">
+          <div class="p-4 border-b border-gray-800 bg-gradient-to-r from-gray-800 to-gray-900">
             <div class="flex items-center space-x-3">
               <div class="bg-gradient-to-br from-indigo-500 to-purple-600 p-3 rounded-full shadow-lg ring-2 ring-indigo-400 ring-opacity-50">
                 <i class="fas fa-user"></i>
@@ -190,7 +190,7 @@ app.get('/', async (c) => {
           </nav>
 
           <!-- 로그아웃 -->
-          <div class="p-4 border-t border-slate-700">
+          <div class="p-4 border-t border-gray-800">
             <button
               id="logoutButton"
               class="w-full bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-semibold py-3 px-4 rounded-lg transition duration-200 flex items-center justify-center shadow-lg hover:shadow-xl"
@@ -214,7 +214,10 @@ app.get('/', async (c) => {
                   title="프로필 수정"
                 >
                   <i class="fas fa-user-circle text-xl"></i>
-                  <span>${user.name} (${user.role})</span>
+                  <div class="flex flex-col items-start">
+                    <span class="font-semibold">${user.name}</span>
+                    <span class="text-xs text-gray-500">${user.department || user.role} ${user.position ? '· ' + user.position : ''}</span>
+                  </div>
                 </button>
                 <button id="headerLogoutButton" class="text-red-600 hover:text-red-800 transition">
                   <i class="fas fa-sign-out-alt"></i> 로그아웃

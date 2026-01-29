@@ -112,7 +112,7 @@ function renderMenu() {
     // 구분선 처리
     if (item.divider) {
       const divider = document.createElement('div');
-      divider.className = 'my-3 border-t border-slate-700';
+      divider.className = 'my-3 border-t border-gray-800';
       mainMenu.appendChild(divider);
       return;
     }
@@ -128,17 +128,19 @@ function renderMenu() {
       // 서브메뉴가 있는 경우
       menuItem.className = 'menu-item';
       menuItem.innerHTML = `
-        <button class="w-full flex items-center justify-between p-3 hover:bg-slate-700 hover:bg-opacity-50 rounded-lg transition duration-200 submenu-toggle" data-target="${item.id}-submenu">
+        <button class="w-full flex items-center justify-between p-3 hover:bg-gray-700 hover:bg-opacity-70 rounded-lg transition duration-200 submenu-toggle relative" data-target="${item.id}-submenu">
+          <div class="absolute left-0 top-0 bottom-0 w-1 bg-orange-500 rounded-r-full opacity-0 menu-active-indicator transition-opacity duration-200"></div>
           <div class="flex items-center space-x-3">
-            <i class="fas ${item.icon} text-indigo-400"></i>
+            <i class="fas ${item.icon} text-orange-400"></i>
             <span class="menu-text">${item.label}</span>
           </div>
           <i class="fas fa-chevron-down menu-text transition-transform submenu-icon"></i>
         </button>
         <div id="${item.id}-submenu" class="submenu ml-4 space-y-1 mt-1">
           ${item.submenu.map(sub => `
-            <a href="#${sub.page}" class="block p-2 hover:bg-slate-700 hover:bg-opacity-50 rounded-lg transition duration-200 menu-link" data-page="${sub.page}">
-              <span class="menu-text text-sm text-slate-300 hover:text-white">${sub.label}</span>
+            <a href="#${sub.page}" class="block p-2 pl-4 hover:bg-gray-700 hover:bg-opacity-70 rounded-lg transition duration-200 menu-link relative" data-page="${sub.page}">
+              <div class="absolute left-0 top-0 bottom-0 w-1 bg-orange-500 rounded-r-full opacity-0 menu-active-indicator transition-opacity duration-200"></div>
+              <span class="menu-text text-sm text-gray-300 hover:text-white">${sub.label}</span>
             </a>
           `).join('')}
         </div>
@@ -146,8 +148,9 @@ function renderMenu() {
     } else {
       // 일반 메뉴
       menuItem.innerHTML = `
-        <a href="#${item.page}" class="flex items-center space-x-3 p-3 hover:bg-slate-700 hover:bg-opacity-50 rounded-lg transition duration-200 menu-link" data-page="${item.page}">
-          <i class="fas ${item.icon} text-indigo-400"></i>
+        <a href="#${item.page}" class="flex items-center space-x-3 p-3 hover:bg-gray-700 hover:bg-opacity-70 rounded-lg transition duration-200 menu-link relative" data-page="${item.page}">
+          <div class="absolute left-0 top-0 bottom-0 w-1 bg-orange-500 rounded-r-full opacity-0 menu-active-indicator transition-opacity duration-200"></div>
+          <i class="fas ${item.icon} text-orange-400"></i>
           <span class="menu-text">${item.label}</span>
         </a>
       `;
@@ -173,6 +176,18 @@ function renderMenu() {
     link.addEventListener('click', (e) => {
       e.preventDefault();
       const page = link.getAttribute('data-page');
+      
+      // 모든 메뉴의 액티브 표시 제거
+      document.querySelectorAll('.menu-active-indicator').forEach(indicator => {
+        indicator.style.opacity = '0';
+      });
+      
+      // 클릭한 메뉴의 액티브 표시 활성화
+      const indicator = link.querySelector('.menu-active-indicator');
+      if (indicator) {
+        indicator.style.opacity = '1';
+      }
+      
       loadPage(page);
     });
   });
@@ -602,6 +617,7 @@ async function showProfileModal() {
               <i class="fas fa-lock mr-2"></i>비밀번호 변경 (선택)
             </h3>
             <p class="text-sm text-gray-600 mb-4">
+              * 비밀번호를 변경하려면 아래 두 필드에 새 비밀번호를 입력하세요.<br>
               * 비밀번호를 변경하지 않으려면 비워두세요.<br>
               * 비밀번호를 잊으신 경우 관리자에게 문의하세요.
             </p>
@@ -614,8 +630,9 @@ async function showProfileModal() {
                 <input
                   type="password"
                   id="profileNewPassword"
+                  value=""
                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                  placeholder="새 비밀번호"
+                  placeholder="새 비밀번호 (선택)"
                 />
               </div>
 
@@ -627,8 +644,9 @@ async function showProfileModal() {
                 <input
                   type="password"
                   id="profileConfirmPassword"
+                  value=""
                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                  placeholder="새 비밀번호 확인"
+                  placeholder="새 비밀번호 확인 (선택)"
                 />
               </div>
             </div>
