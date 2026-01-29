@@ -369,28 +369,6 @@ function showNoticeWriteForm() {
     await submitNotice();
   });
 }
-          </button>
-          <button
-            type="button"
-            onclick="loadNoticeList(${currentNoticePage})"
-            class="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold py-3 px-4 rounded-lg transition"
-          >
-            <i class="fas fa-times mr-2"></i>
-            취소
-          </button>
-        </div>
-      </form>
-    </div>
-  `;
-
-  document.getElementById('mainContent').innerHTML = content;
-
-  // 폼 제출 이벤트
-  document.getElementById('noticeForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    await submitNotice();
-  });
-}
 
 /**
  * 공지사항 수정 폼
