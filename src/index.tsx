@@ -8,6 +8,9 @@ import noticeRoutes from './routes/notices';
 import consultationRoutes from './routes/consultations';
 import contractRoutes from './routes/contracts';
 
+// 빌드 시점의 버전 (캐시 무효화용)
+const BUILD_VERSION = Date.now();
+
 const app = new Hono<{ Bindings: Bindings; Variables: Variables }>();
 
 // CORS 설정
@@ -293,10 +296,10 @@ app.get('/', async (c) => {
         // 사용자 정보
         const currentUser = ${JSON.stringify({ id: user.id, username: user.username, name: user.name, role: user.role })};
       </script>
-      <script src="/static/notice.js?v=${Date.now()}"></script>
-      <script src="/static/consultation.js?v=${Date.now()}"></script>
-      <script src="/static/contract.js?v=${Date.now()}"></script>
-      <script src="/static/app.js?v=${Date.now()}"></script>
+      <script src="/static/notice.js?v=${BUILD_VERSION}"></script>
+      <script src="/static/consultation.js?v=${BUILD_VERSION}"></script>
+      <script src="/static/contract.js?v=${BUILD_VERSION}"></script>
+      <script src="/static/app.js?v=${BUILD_VERSION}"></script>
     </body>
     </html>
   `);
