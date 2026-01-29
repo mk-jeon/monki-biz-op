@@ -273,16 +273,17 @@ function loadPage(page, addToHistory = true) {
   if (page === 'dashboard') {
     console.log('   🏠 대시보드로 이동');
     
-    // 현재 페이지가 이미 대시보드인지 확인
-    const currentPath = window.location.pathname;
-    if (currentPath === '/' || currentPath === '/dashboard') {
-      console.log('   ✅ 이미 대시보드 페이지입니다. 리로드하지 않습니다.');
+    // 현재 실제로 대시보드 콘텐츠가 표시되어 있는지 확인
+    const isDashboardVisible = document.querySelector('.dashboard-card') !== null;
+    
+    if (isDashboardVisible) {
+      console.log('   ✅ 이미 대시보드가 표시되어 있습니다. 데이터만 새로고침합니다.');
       // 대시보드 데이터만 새로고침
       loadDashboardData();
       return;
     }
     
-    // 다른 페이지에서 대시보드로 이동하는 경우에만 리다이렉트
+    // 대시보드가 표시되어 있지 않으면 리다이렉트
     console.log('   🔄 대시보드로 리다이렉트');
     // 히스토리를 localStorage에 저장
     try {
