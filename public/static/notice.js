@@ -32,14 +32,60 @@ async function loadNoticeList(page = 1) {
               <i class="fas fa-inbox text-4xl mb-4"></i>
               <p>등록된 공지사항이 없습니다.</p>
             </div>
-          ` : notices.map(notice => `
+          ` : notices.map(notice => {
+            // 분류 표시
+            const categoryMap = {
+              'update': { text: '업데이트', color: 'bg-blue-600' },
+              'info': { text: '정보공유', color: 'bg-green-600' },
+              'general': { text: '일반', color: 'bg-gray-600' }
+            };
+            const category = categoryMap[notice.category] || categoryMap['general'];
+            
+            // 채널 파싱
+            const channels = notice.channels ? notice.channels.split(',').filter(c => c) : [];
+            
+            // 채널 뱃지 색상 매핑
+            const channelColors = {
+              '사장님사이트': 'bg-purple-100 text-purple-700',
+              '테이블오더App': 'bg-blue-100 text-blue-700',
+              'OKPOS': 'bg-green-100 text-green-700',
+              'EasyPOS': 'bg-yellow-100 text-yellow-700',
+              '엑스퍼트포스': 'bg-red-100 text-red-700',
+              '유니온': 'bg-indigo-100 text-indigo-700'
+            };
+            
+            // 내용 일부 (100자까지)
+            const contentPreview = notice.content.substring(0, 100) + (notice.content.length > 100 ? '...' : '');
+            
+            return `
             <div class="p-4 hover:bg-gray-50 cursor-pointer transition" onclick="loadNoticeDetail(${notice.id})">
               <div class="flex items-start justify-between">
                 <div class="flex-1">
+                  <!-- 상단: 고정/중요/분류 -->
                   <div class="flex items-center space-x-2 mb-2">
                     ${notice.is_pinned ? '<span class="bg-red-500 text-white text-xs px-2 py-1 rounded"><i class="fas fa-thumbtack mr-1"></i>고정</span>' : ''}
-                    <h3 class="text-lg font-semibold text-gray-800 hover:text-indigo-600">${notice.title}</h3>
+                    ${notice.is_important ? '<span class="bg-orange-500 text-white text-xs px-2 py-1 rounded"><i class="fas fa-exclamation-circle mr-1"></i>중요</span>' : ''}
+                    <span class="${category.color} text-white text-xs font-bold px-2 py-1 rounded">${category.text}</span>
                   </div>
+                  
+                  <!-- 제목 -->
+                  <h3 class="text-lg font-semibold text-gray-800 hover:text-indigo-600 mb-2">${notice.title}</h3>
+                  
+                  <!-- 연관채널 -->
+                  ${channels.length > 0 ? `
+                    <div class="flex items-center space-x-2 mb-2">
+                      ${channels.map(ch => `
+                        <span class="${channelColors[ch] || 'bg-gray-100 text-gray-700'} text-xs px-2 py-1 rounded-full">
+                          ${ch}
+                        </span>
+                      `).join('')}
+                    </div>
+                  ` : ''}
+                  
+                  <!-- 내용 일부 -->
+                  <p class="text-sm text-gray-600 mb-2">${contentPreview}</p>
+                  
+                  <!-- 메타정보 -->
                   <div class="flex items-center space-x-4 text-sm text-gray-500">
                     <span><i class="fas fa-user mr-1"></i>${notice.author_name}</span>
                     <span><i class="fas fa-calendar mr-1"></i>${formatDate(notice.created_at)}</span>
@@ -48,7 +94,8 @@ async function loadNoticeList(page = 1) {
                 </div>
               </div>
             </div>
-          `).join('')}
+          `;
+          }).join('')}
         </div>
 
         <!-- 페이지네이션 -->
@@ -96,6 +143,27 @@ async function loadNoticeDetail(id) {
 
     const canEdit = currentUser.id === notice.author_id || ['master', 'admin'].includes(currentUser.role);
 
+    // 분류 표시
+    const categoryMap = {
+      'update': { text: '업데이트', color: 'bg-blue-600' },
+      'info': { text: '정보공유', color: 'bg-green-600' },
+      'general': { text: '일반', color: 'bg-gray-600' }
+    };
+    const category = categoryMap[notice.category] || categoryMap['general'];
+    
+    // 채널 파싱
+    const channels = notice.channels ? notice.channels.split(',').filter(c => c) : [];
+    
+    // 채널 뱃지 색상 매핑
+    const channelColors = {
+      '사장님사이트': 'bg-purple-100 text-purple-700',
+      '테이블오더App': 'bg-blue-100 text-blue-700',
+      'OKPOS': 'bg-green-100 text-green-700',
+      'EasyPOS': 'bg-yellow-100 text-yellow-700',
+      '엑스퍼트포스': 'bg-red-100 text-red-700',
+      '유니온': 'bg-indigo-100 text-indigo-700'
+    };
+
     const content = `
       <div class="bg-white rounded-lg shadow-md">
         <!-- 헤더 -->
@@ -115,10 +183,30 @@ async function loadNoticeDetail(id) {
               </div>
             ` : ''}
           </div>
-          <div class="flex items-center space-x-2 mb-2">
+          
+          <!-- 상단: 고정/중요/분류 -->
+          <div class="flex items-center space-x-2 mb-3">
             ${notice.is_pinned ? '<span class="bg-red-500 text-white text-xs px-2 py-1 rounded"><i class="fas fa-thumbtack mr-1"></i>고정</span>' : ''}
+            ${notice.is_important ? '<span class="bg-orange-500 text-white text-xs px-2 py-1 rounded"><i class="fas fa-exclamation-circle mr-1"></i>중요</span>' : ''}
+            <span class="${category.color} text-white text-xs font-bold px-2 py-1 rounded">${category.text}</span>
           </div>
-          <h2 class="text-2xl font-bold text-gray-800 mb-4">${notice.title}</h2>
+          
+          <!-- 제목 -->
+          <h2 class="text-2xl font-bold text-gray-800 mb-3">${notice.title}</h2>
+          
+          <!-- 연관채널 -->
+          ${channels.length > 0 ? `
+            <div class="flex items-center space-x-2 mb-3">
+              <span class="text-sm text-gray-600 font-medium">연관채널:</span>
+              ${channels.map(ch => `
+                <span class="${channelColors[ch] || 'bg-gray-100 text-gray-700'} text-xs px-3 py-1 rounded-full font-medium">
+                  ${ch}
+                </span>
+              `).join('')}
+            </div>
+          ` : ''}
+          
+          <!-- 메타정보 -->
           <div class="flex items-center space-x-4 text-sm text-gray-500">
             <span><i class="fas fa-user mr-1"></i>${notice.author_name}</span>
             <span><i class="fas fa-calendar mr-1"></i>${formatDate(notice.created_at)}</span>
@@ -145,6 +233,9 @@ async function loadNoticeDetail(id) {
  * 공지사항 작성 폼
  */
 function showNoticeWriteForm() {
+  const channels = ['사장님사이트', '테이블오더App', 'OKPOS', 'EasyPOS', '엑스퍼트포스', '유니온'];
+  const selectedChannels = [];
+
   const content = `
     <div class="bg-white rounded-lg shadow-md">
       <div class="p-6 border-b border-gray-200">
@@ -155,6 +246,54 @@ function showNoticeWriteForm() {
       </div>
 
       <form id="noticeForm" class="p-6 space-y-6">
+        <!-- 분류 선택 -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">
+            분류 <span class="text-red-500">*</span>
+          </label>
+          <div class="flex space-x-3">
+            <label class="flex items-center px-4 py-2 border-2 border-gray-300 rounded-lg cursor-pointer hover:border-blue-500 transition">
+              <input type="radio" name="category" value="update" class="mr-2" checked>
+              <span class="text-sm font-medium">업데이트</span>
+            </label>
+            <label class="flex items-center px-4 py-2 border-2 border-gray-300 rounded-lg cursor-pointer hover:border-green-500 transition">
+              <input type="radio" name="category" value="info" class="mr-2">
+              <span class="text-sm font-medium">정보공유</span>
+            </label>
+            <label class="flex items-center px-4 py-2 border-2 border-gray-300 rounded-lg cursor-pointer hover:border-gray-500 transition">
+              <input type="radio" name="category" value="general" class="mr-2">
+              <span class="text-sm font-medium">일반</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- 중요 여부 -->
+        <div class="flex items-center space-x-4">
+          <div class="flex items-center">
+            <input
+              type="checkbox"
+              id="noticeImportant"
+              class="w-4 h-4 text-orange-600 border-gray-300 rounded focus:ring-orange-500"
+            >
+            <label for="noticeImportant" class="ml-2 text-sm text-gray-700">
+              <i class="fas fa-exclamation-circle mr-1 text-orange-500"></i>
+              중요 공지
+            </label>
+          </div>
+          <div class="flex items-center">
+            <input
+              type="checkbox"
+              id="noticePinned"
+              class="w-4 h-4 text-red-600 border-gray-300 rounded focus:ring-red-500"
+            >
+            <label for="noticePinned" class="ml-2 text-sm text-gray-700">
+              <i class="fas fa-thumbtack mr-1 text-red-500"></i>
+              상단 고정
+            </label>
+          </div>
+        </div>
+
+        <!-- 제목 -->
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-2">
             제목 <span class="text-red-500">*</span>
@@ -168,6 +307,26 @@ function showNoticeWriteForm() {
           >
         </div>
 
+        <!-- 연관채널 -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">
+            연관채널 (다중 선택 가능)
+          </label>
+          <div class="flex flex-wrap gap-2" id="channelBadges">
+            ${channels.map(ch => `
+              <button
+                type="button"
+                class="channel-badge px-4 py-2 border-2 border-gray-300 bg-gray-50 text-gray-600 rounded-lg text-sm transition hover:border-gray-400"
+                data-channel="${ch}"
+                onclick="toggleChannel(this)"
+              >
+                ${ch}
+              </button>
+            `).join('')}
+          </div>
+        </div>
+
+        <!-- 내용 -->
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-2">
             내용 <span class="text-red-500">*</span>
@@ -179,18 +338,6 @@ function showNoticeWriteForm() {
             class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
             placeholder="내용을 입력하세요"
           ></textarea>
-        </div>
-
-        <div class="flex items-center">
-          <input
-            type="checkbox"
-            id="noticePinned"
-            class="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
-          >
-          <label for="noticePinned" class="ml-2 text-sm text-gray-700">
-            <i class="fas fa-thumbtack mr-1 text-red-500"></i>
-            상단 고정
-          </label>
         </div>
 
         <div class="flex space-x-3">
@@ -222,6 +369,28 @@ function showNoticeWriteForm() {
     await submitNotice();
   });
 }
+          </button>
+          <button
+            type="button"
+            onclick="loadNoticeList(${currentNoticePage})"
+            class="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold py-3 px-4 rounded-lg transition"
+          >
+            <i class="fas fa-times mr-2"></i>
+            취소
+          </button>
+        </div>
+      </form>
+    </div>
+  `;
+
+  document.getElementById('mainContent').innerHTML = content;
+
+  // 폼 제출 이벤트
+  document.getElementById('noticeForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    await submitNotice();
+  });
+}
 
 /**
  * 공지사항 수정 폼
@@ -230,6 +399,9 @@ async function showNoticeEditForm(id) {
   try {
     const response = await axios.get(`/api/notices/${id}`);
     const { notice } = response.data;
+    
+    const channels = ['사장님사이트', '테이블오더App', 'OKPOS', 'EasyPOS', '엑스퍼트포스', '유니온'];
+    const selectedChannels = notice.channels ? notice.channels.split(',').filter(c => c) : [];
 
     const content = `
       <div class="bg-white rounded-lg shadow-md">
@@ -241,6 +413,56 @@ async function showNoticeEditForm(id) {
         </div>
 
         <form id="noticeEditForm" class="p-6 space-y-6">
+          <!-- 분류 선택 -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+              분류 <span class="text-red-500">*</span>
+            </label>
+            <div class="flex space-x-3">
+              <label class="flex items-center px-4 py-2 border-2 border-gray-300 rounded-lg cursor-pointer hover:border-blue-500 transition">
+                <input type="radio" name="category" value="update" class="mr-2" ${notice.category === 'update' ? 'checked' : ''}>
+                <span class="text-sm font-medium">업데이트</span>
+              </label>
+              <label class="flex items-center px-4 py-2 border-2 border-gray-300 rounded-lg cursor-pointer hover:border-green-500 transition">
+                <input type="radio" name="category" value="info" class="mr-2" ${notice.category === 'info' ? 'checked' : ''}>
+                <span class="text-sm font-medium">정보공유</span>
+              </label>
+              <label class="flex items-center px-4 py-2 border-2 border-gray-300 rounded-lg cursor-pointer hover:border-gray-500 transition">
+                <input type="radio" name="category" value="general" class="mr-2" ${notice.category === 'general' || !notice.category ? 'checked' : ''}>
+                <span class="text-sm font-medium">일반</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- 중요 여부 -->
+          <div class="flex items-center space-x-4">
+            <div class="flex items-center">
+              <input
+                type="checkbox"
+                id="noticeImportant"
+                ${notice.is_important ? 'checked' : ''}
+                class="w-4 h-4 text-orange-600 border-gray-300 rounded focus:ring-orange-500"
+              >
+              <label for="noticeImportant" class="ml-2 text-sm text-gray-700">
+                <i class="fas fa-exclamation-circle mr-1 text-orange-500"></i>
+                중요 공지
+              </label>
+            </div>
+            <div class="flex items-center">
+              <input
+                type="checkbox"
+                id="noticePinned"
+                ${notice.is_pinned ? 'checked' : ''}
+                class="w-4 h-4 text-red-600 border-gray-300 rounded focus:ring-red-500"
+              >
+              <label for="noticePinned" class="ml-2 text-sm text-gray-700">
+                <i class="fas fa-thumbtack mr-1 text-red-500"></i>
+                상단 고정
+              </label>
+            </div>
+          </div>
+
+          <!-- 제목 -->
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-2">
               제목 <span class="text-red-500">*</span>
@@ -254,6 +476,29 @@ async function showNoticeEditForm(id) {
             >
           </div>
 
+          <!-- 연관채널 -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+              연관채널 (다중 선택 가능)
+            </label>
+            <div class="flex flex-wrap gap-2" id="channelBadges">
+              ${channels.map(ch => {
+                const isSelected = selectedChannels.includes(ch);
+                return `
+                  <button
+                    type="button"
+                    class="channel-badge px-4 py-2 border-2 ${isSelected ? 'border-indigo-600 bg-indigo-50 text-indigo-700 font-semibold' : 'border-gray-300 bg-gray-50 text-gray-600'} rounded-lg text-sm transition hover:border-gray-400"
+                    data-channel="${ch}"
+                    onclick="toggleChannel(this)"
+                  >
+                    ${ch}
+                  </button>
+                `;
+              }).join('')}
+            </div>
+          </div>
+
+          <!-- 내용 -->
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-2">
               내용 <span class="text-red-500">*</span>
@@ -264,19 +509,6 @@ async function showNoticeEditForm(id) {
               rows="15"
               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
             >${notice.content}</textarea>
-          </div>
-
-          <div class="flex items-center">
-            <input
-              type="checkbox"
-              id="noticePinned"
-              ${notice.is_pinned ? 'checked' : ''}
-              class="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
-            >
-            <label for="noticePinned" class="ml-2 text-sm text-gray-700">
-              <i class="fas fa-thumbtack mr-1 text-red-500"></i>
-              상단 고정
-            </label>
           </div>
 
           <div class="flex space-x-3">
@@ -314,12 +546,44 @@ async function showNoticeEditForm(id) {
 }
 
 /**
+ * 채널 토글 (선택/해제)
+ */
+function toggleChannel(button) {
+  if (button.classList.contains('border-indigo-600')) {
+    // 선택 해제
+    button.classList.remove('border-indigo-600', 'bg-indigo-50', 'text-indigo-700', 'font-semibold');
+    button.classList.add('border-gray-300', 'bg-gray-50', 'text-gray-600');
+  } else {
+    // 선택
+    button.classList.remove('border-gray-300', 'bg-gray-50', 'text-gray-600');
+    button.classList.add('border-indigo-600', 'bg-indigo-50', 'text-indigo-700', 'font-semibold');
+  }
+}
+
+/**
+ * 선택된 채널 가져오기
+ */
+function getSelectedChannels() {
+  const badges = document.querySelectorAll('.channel-badge');
+  const selected = [];
+  badges.forEach(badge => {
+    if (badge.classList.contains('border-indigo-600')) {
+      selected.push(badge.getAttribute('data-channel'));
+    }
+  });
+  return selected;
+}
+
+/**
  * 공지사항 작성 제출
  */
 async function submitNotice() {
   const title = document.getElementById('noticeTitle').value;
   const content = document.getElementById('noticeContent').value;
   const is_pinned = document.getElementById('noticePinned').checked;
+  const is_important = document.getElementById('noticeImportant').checked;
+  const category = document.querySelector('input[name="category"]:checked').value;
+  const channels = getSelectedChannels();
 
   if (!title || !content) {
     alert('제목과 내용을 입력해주세요.');
@@ -330,7 +594,10 @@ async function submitNotice() {
     await axios.post('/api/notices', {
       title,
       content,
-      is_pinned
+      is_pinned,
+      is_important,
+      category,
+      channels
     });
 
     alert('공지사항이 작성되었습니다.');
@@ -348,6 +615,9 @@ async function updateNotice(id) {
   const title = document.getElementById('noticeTitle').value;
   const content = document.getElementById('noticeContent').value;
   const is_pinned = document.getElementById('noticePinned').checked;
+  const is_important = document.getElementById('noticeImportant').checked;
+  const category = document.querySelector('input[name="category"]:checked').value;
+  const channels = getSelectedChannels();
 
   if (!title || !content) {
     alert('제목과 내용을 입력해주세요.');
@@ -358,7 +628,10 @@ async function updateNotice(id) {
     await axios.put(`/api/notices/${id}`, {
       title,
       content,
-      is_pinned
+      is_pinned,
+      is_important,
+      category,
+      channels
     });
 
     alert('공지사항이 수정되었습니다.');

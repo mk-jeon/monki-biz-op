@@ -29,7 +29,7 @@ notices.get('/', requireAuth, async (c) => {
           u.name as author_name
         FROM notices n
         LEFT JOIN users u ON n.author_id = u.id
-        ORDER BY n.is_pinned DESC, n.created_at DESC
+        ORDER BY n.is_pinned DESC, n.is_important DESC, n.created_at DESC
         LIMIT ? OFFSET ?
       `)
       .bind(limit, offset)
@@ -95,18 +95,21 @@ notices.get('/:id', requireAuth, async (c) => {
 notices.post('/', requireAuth, async (c) => {
   try {
     const user = c.get('user');
-    const { title, content, is_pinned } = await c.req.json();
+    const { title, content, is_pinned, category, is_important, channels } = await c.req.json();
 
     if (!title || !content) {
       return c.json({ error: '제목과 내용을 입력해주세요.' }, 400);
     }
 
+    // 채널 배열을 문자열로 변환
+    const channelsStr = Array.isArray(channels) ? channels.join(',') : '';
+
     const result = await c.env.DB
       .prepare(`
-        INSERT INTO notices (title, content, author_id, is_pinned)
-        VALUES (?, ?, ?, ?)
+        INSERT INTO notices (title, content, author_id, is_pinned, category, is_important, channels)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
       `)
-      .bind(title, content, user.id, is_pinned ? 1 : 0)
+      .bind(title, content, user.id, is_pinned ? 1 : 0, category || 'general', is_important ? 1 : 0, channelsStr)
       .run();
 
     return c.json({
@@ -127,7 +130,7 @@ notices.put('/:id', requireAuth, async (c) => {
   try {
     const user = c.get('user');
     const id = c.req.param('id');
-    const { title, content, is_pinned } = await c.req.json();
+    const { title, content, is_pinned, category, is_important, channels } = await c.req.json();
 
     if (!title || !content) {
       return c.json({ error: '제목과 내용을 입력해주세요.' }, 400);
@@ -148,13 +151,16 @@ notices.put('/:id', requireAuth, async (c) => {
       return c.json({ error: '수정 권한이 없습니다.' }, 403);
     }
 
+    // 채널 배열을 문자열로 변환
+    const channelsStr = Array.isArray(channels) ? channels.join(',') : '';
+
     await c.env.DB
       .prepare(`
         UPDATE notices 
-        SET title = ?, content = ?, is_pinned = ?, updated_at = CURRENT_TIMESTAMP
+        SET title = ?, content = ?, is_pinned = ?, category = ?, is_important = ?, channels = ?, updated_at = CURRENT_TIMESTAMP
         WHERE id = ?
       `)
-      .bind(title, content, is_pinned ? 1 : 0, id)
+      .bind(title, content, is_pinned ? 1 : 0, category || 'general', is_important ? 1 : 0, channelsStr, id)
       .run();
 
     return c.json({ success: true });
