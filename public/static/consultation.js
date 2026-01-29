@@ -99,6 +99,7 @@ async function loadConsultationList(page = 1) {
                 <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">옵션</th>
                 <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">등록일</th>
                 <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">등록자</th>
+                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">수정자</th>
                 <th class="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase">관리</th>
               </tr>
             </thead>
@@ -129,6 +130,7 @@ async function loadConsultationList(page = 1) {
                     </td>
                     <td class="px-4 py-3 text-sm text-gray-600">${formatDate(item.created_at)}</td>
                     <td class="px-4 py-3 text-sm text-gray-600">${item.created_by_name}</td>
+                    <td class="px-4 py-3 text-sm text-gray-600">${item.updated_by_name || '-'}</td>
                     <td class="px-4 py-3 text-center">
                       <button onclick="event.stopPropagation(); showConsultationForm(${item.id})" class="text-blue-600 hover:text-blue-800 mr-2">
                         <i class="fas fa-edit"></i>
@@ -645,4 +647,240 @@ async function showConsultationDetail(id) {
 function closeDetailModal() {
   const modal = document.getElementById('detailModal');
   if (modal) modal.remove();
+}
+
+/**
+ * 칸반 보드 조회
+ */
+async function loadConsultationKanban() {
+  try {
+    // 모든 상태별 데이터 조회
+    const response = await axios.get('/api/consultations?page=1&limit=1000');
+    const consultations = response.data.consultations || [];
+
+    // 상태별로 그룹화
+    const grouped = {
+      'waiting': [],
+      'in_progress': [],
+      'hold': [],
+      'completed': [],
+      'cancelled': []
+    };
+
+    consultations.forEach(item => {
+      if (grouped[item.status]) {
+        grouped[item.status].push(item);
+      }
+    });
+
+    const statusConfig = {
+      'waiting': { text: '상담대기', color: 'bg-gray-500', icon: 'fa-clock' },
+      'in_progress': { text: '상담중', color: 'bg-blue-500', icon: 'fa-comments' },
+      'hold': { text: '보류', color: 'bg-yellow-500', icon: 'fa-pause-circle' },
+      'completed': { text: '계약확정', color: 'bg-green-500', icon: 'fa-check-circle' },
+      'cancelled': { text: '취소', color: 'bg-red-500', icon: 'fa-times-circle' }
+    };
+
+    const content = `
+      <div class="bg-white rounded-lg shadow-md">
+        <!-- 헤더 -->
+        <div class="p-6 border-b border-gray-200">
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="text-2xl font-bold text-gray-800">
+              <i class="fas fa-comments mr-2 text-blue-600"></i>
+              상담현황 - 칸반 보드
+            </h2>
+            <div class="flex space-x-2">
+              <button onclick="toggleViewMode()" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg transition flex items-center">
+                <i class="fas fa-list mr-2"></i>
+                리스트 보기
+              </button>
+              <button onclick="downloadExcelTemplate()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition flex items-center">
+                <i class="fas fa-file-excel mr-2"></i>
+                엑셀 빈양식
+              </button>
+              <button onclick="showBulkUploadModal()" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition flex items-center">
+                <i class="fas fa-upload mr-2"></i>
+                일괄 업로드
+              </button>
+              <button onclick="showConsultationForm()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg transition flex items-center">
+                <i class="fas fa-plus mr-2"></i>
+                신규 등록
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 칸반 보드 -->
+        <div class="p-6">
+          <div class="grid grid-cols-5 gap-4">
+            ${Object.keys(statusConfig).map(status => {
+              const config = statusConfig[status];
+              const items = grouped[status] || [];
+              
+              return `
+                <div class="bg-gray-50 rounded-lg p-4">
+                  <!-- 컬럼 헤더 -->
+                  <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center">
+                      <i class="fas ${config.icon} ${config.color.replace('bg-', 'text-')} mr-2"></i>
+                      <h3 class="font-bold text-gray-800">${config.text}</h3>
+                    </div>
+                    <span class="bg-white text-gray-700 text-sm font-semibold px-2 py-1 rounded">${items.length}</span>
+                  </div>
+
+                  <!-- 드롭존 -->
+                  <div 
+                    class="kanban-column min-h-[600px] space-y-3" 
+                    data-status="${status}"
+                    ondrop="handleDrop(event)"
+                    ondragover="handleDragOver(event)"
+                    ondragleave="handleDragLeave(event)"
+                  >
+                    ${items.map(item => renderKanbanCard(item, config)).join('')}
+                  </div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        </div>
+      </div>
+    `;
+
+    document.getElementById('mainContent').innerHTML = content;
+  } catch (error) {
+    console.error('Load kanban error:', error);
+    alert('칸반 보드를 불러올 수 없습니다.');
+  }
+}
+
+/**
+ * 칸반 카드 렌더링
+ */
+function renderKanbanCard(item, config) {
+  return `
+    <div 
+      class="kanban-card bg-white p-4 rounded-lg shadow hover:shadow-lg transition cursor-move border-l-4 ${config.color.replace('bg-', 'border-')}"
+      draggable="true"
+      data-id="${item.id}"
+      ondragstart="handleDragStart(event)"
+      ondragend="handleDragEnd(event)"
+      onclick="showConsultationDetail(${item.id})"
+    >
+      <!-- 카드 헤더 -->
+      <div class="flex items-center justify-between mb-2">
+        <span class="text-xs font-semibold text-gray-500">#${item.id}</span>
+        <div class="flex space-x-1">
+          ${item.is_visit_consultation ? '<span class="bg-purple-100 text-purple-700 text-xs px-2 py-1 rounded">방문</span>' : ''}
+          ${item.has_quotation ? '<span class="bg-blue-100 text-blue-700 text-xs px-2 py-1 rounded">견적</span>' : ''}
+        </div>
+      </div>
+
+      <!-- 고객 정보 -->
+      <div class="mb-3">
+        <p class="font-semibold text-gray-800 mb-1">${item.customer_name || '고객명 미입력'}</p>
+        <p class="text-sm text-gray-600">
+          <i class="fas fa-phone mr-1 text-gray-400"></i>
+          ${item.phone}
+        </p>
+      </div>
+
+      <!-- 유입경로 -->
+      ${item.inflow_source ? `
+        <div class="mb-2">
+          <span class="inline-block bg-indigo-100 text-indigo-700 text-xs px-2 py-1 rounded">
+            ${item.inflow_source}
+          </span>
+        </div>
+      ` : ''}
+
+      <!-- 메모 미리보기 -->
+      ${item.notes ? `
+        <p class="text-xs text-gray-500 mb-2 line-clamp-2">${item.notes}</p>
+      ` : ''}
+
+      <!-- 등록 정보 -->
+      <div class="text-xs text-gray-400 border-t pt-2 mt-2">
+        <p>등록: ${item.created_by_name}</p>
+        ${item.updated_by_name ? `<p>수정: ${item.updated_by_name}</p>` : ''}
+        <p>${formatDate(item.created_at)}</p>
+      </div>
+    </div>
+  `;
+}
+
+/**
+ * 드래그 시작
+ */
+let draggedElement = null;
+
+function handleDragStart(e) {
+  draggedElement = e.currentTarget;
+  e.currentTarget.style.opacity = '0.5';
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/html', e.currentTarget.innerHTML);
+}
+
+/**
+ * 드래그 종료
+ */
+function handleDragEnd(e) {
+  e.currentTarget.style.opacity = '1';
+  
+  // 모든 드롭존 하이라이트 제거
+  document.querySelectorAll('.kanban-column').forEach(col => {
+    col.classList.remove('bg-blue-100', 'border-2', 'border-blue-400', 'border-dashed');
+  });
+}
+
+/**
+ * 드래그 오버
+ */
+function handleDragOver(e) {
+  if (e.preventDefault) {
+    e.preventDefault();
+  }
+  
+  const column = e.currentTarget;
+  column.classList.add('bg-blue-100', 'border-2', 'border-blue-400', 'border-dashed');
+  
+  e.dataTransfer.dropEffect = 'move';
+  return false;
+}
+
+/**
+ * 드래그 리브
+ */
+function handleDragLeave(e) {
+  const column = e.currentTarget;
+  column.classList.remove('bg-blue-100', 'border-2', 'border-blue-400', 'border-dashed');
+}
+
+/**
+ * 드롭 처리
+ */
+async function handleDrop(e) {
+  if (e.stopPropagation) {
+    e.stopPropagation();
+  }
+  
+  const column = e.currentTarget;
+  column.classList.remove('bg-blue-100', 'border-2', 'border-blue-400', 'border-dashed');
+  
+  if (draggedElement) {
+    const itemId = draggedElement.dataset.id;
+    const newStatus = column.dataset.status;
+    
+    try {
+      await axios.put(`/api/consultations/${itemId}/status`, { status: newStatus });
+      
+      // 칸반 보드 새로고침
+      loadConsultationKanban();
+    } catch (error) {
+      console.error('Update status error:', error);
+      alert(error.response?.data?.error || '상태 변경에 실패했습니다.');
+    }
+  }
+  
+  return false;
 }
