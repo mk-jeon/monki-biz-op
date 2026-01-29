@@ -198,9 +198,10 @@ document.getElementById('forwardButton').addEventListener('click', () => {
 // 페이지 로드
 function loadPage(page, addToHistory = true) {
   if (addToHistory) {
-    historyIndex++;
-    history = history.slice(0, historyIndex);
+    // 현재 위치 이후의 히스토리 제거
+    history = history.slice(0, historyIndex + 1);
     history.push(page);
+    historyIndex = history.length - 1;
   }
 
   const mainContent = document.getElementById('mainContent');
