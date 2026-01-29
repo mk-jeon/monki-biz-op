@@ -128,18 +128,18 @@ function renderMenu() {
       // 서브메뉴가 있는 경우
       menuItem.className = 'menu-item';
       menuItem.innerHTML = `
-        <button class="w-full flex items-center justify-between p-3 hover:bg-gray-700 hover:bg-opacity-70 rounded-lg transition duration-200 submenu-toggle relative" data-target="${item.id}-submenu">
-          <div class="absolute left-0 top-0 bottom-0 w-1 bg-orange-500 rounded-r-full opacity-0 menu-active-indicator transition-opacity duration-200"></div>
+        <button class="w-full flex items-center justify-between p-3 hover:bg-gray-700 hover:bg-opacity-70 rounded-lg transition duration-200 submenu-toggle relative group" data-target="${item.id}-submenu">
+          <div class="absolute left-0 top-0 bottom-0 w-1 bg-orange-500 rounded-r-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
           <div class="flex items-center space-x-3">
-            <i class="fas ${item.icon} text-orange-400"></i>
+            <i class="fas ${item.icon}"></i>
             <span class="menu-text">${item.label}</span>
           </div>
           <i class="fas fa-chevron-down menu-text transition-transform submenu-icon"></i>
         </button>
         <div id="${item.id}-submenu" class="submenu ml-4 space-y-1 mt-1">
           ${item.submenu.map(sub => `
-            <a href="#${sub.page}" class="block p-2 pl-4 hover:bg-gray-700 hover:bg-opacity-70 rounded-lg transition duration-200 menu-link relative" data-page="${sub.page}">
-              <div class="absolute left-0 top-0 bottom-0 w-1 bg-orange-500 rounded-r-full opacity-0 menu-active-indicator transition-opacity duration-200"></div>
+            <a href="#${sub.page}" class="block p-2 pl-4 hover:bg-gray-700 hover:bg-opacity-70 rounded-lg transition duration-200 menu-link relative group" data-page="${sub.page}">
+              <div class="absolute left-0 top-0 bottom-0 w-1 bg-orange-500 rounded-r-full opacity-0 group-hover:opacity-100 menu-active-indicator transition-opacity duration-200"></div>
               <span class="menu-text text-sm text-gray-300 hover:text-white">${sub.label}</span>
             </a>
           `).join('')}
@@ -148,9 +148,9 @@ function renderMenu() {
     } else {
       // 일반 메뉴
       menuItem.innerHTML = `
-        <a href="#${item.page}" class="flex items-center space-x-3 p-3 hover:bg-gray-700 hover:bg-opacity-70 rounded-lg transition duration-200 menu-link relative" data-page="${item.page}">
-          <div class="absolute left-0 top-0 bottom-0 w-1 bg-orange-500 rounded-r-full opacity-0 menu-active-indicator transition-opacity duration-200"></div>
-          <i class="fas ${item.icon} text-orange-400"></i>
+        <a href="#${item.page}" class="flex items-center space-x-3 p-3 hover:bg-gray-700 hover:bg-opacity-70 rounded-lg transition duration-200 menu-link relative group" data-page="${item.page}">
+          <div class="absolute left-0 top-0 bottom-0 w-1 bg-orange-500 rounded-r-full opacity-0 group-hover:opacity-100 menu-active-indicator transition-opacity duration-200"></div>
+          <i class="fas ${item.icon}"></i>
           <span class="menu-text">${item.label}</span>
         </a>
       `;

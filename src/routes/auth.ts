@@ -101,31 +101,31 @@ auth.put('/profile', requireAuth, async (c) => {
     const bindings: any[] = [];
 
     // 이름 (한글)
-    if (data.name !== undefined) {
+    if (data.name !== undefined && data.name !== null) {
       fields.push('name = ?');
       bindings.push(data.name);
     }
 
     // 닉네임 (영문)
-    if (data.nickname !== undefined) {
+    if (data.nickname !== undefined && data.nickname !== null) {
       fields.push('nickname = ?');
       bindings.push(data.nickname);
     }
 
     // 연락처
-    if (data.phone !== undefined) {
+    if (data.phone !== undefined && data.phone !== null) {
       fields.push('phone = ?');
       bindings.push(data.phone);
     }
 
     // 부서명
-    if (data.department !== undefined) {
+    if (data.department !== undefined && data.department !== null) {
       fields.push('department = ?');
       bindings.push(data.department);
     }
 
     // 직책
-    if (data.position !== undefined) {
+    if (data.position !== undefined && data.position !== null) {
       fields.push('position = ?');
       bindings.push(data.position);
     }

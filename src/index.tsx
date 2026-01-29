@@ -172,7 +172,24 @@ app.get('/', async (c) => {
           </div>
 
           <!-- 사용자 정보 -->
-          <div class="p-4 border-b border-gray-800 bg-gradient-to-r from-gray-800 to-gray-900">
+          <div class="p-4 border-b border-gray-800 bg-gradient-to-r from-gray-800 to-gray-900 relative">
+            <!-- 권한 뱃지 -->
+            ${user.role === 'master' ? `
+              <div class="absolute top-2 right-2 flex items-center space-x-1 bg-gradient-to-r from-yellow-500 to-orange-500 text-white text-xs font-bold px-2 py-1 rounded-full shadow-lg">
+                <span style="font-size: 14px;">👑</span>
+                <span>MASTER</span>
+              </div>
+            ` : user.role === 'admin' ? `
+              <div class="absolute top-2 right-2 flex items-center space-x-1 bg-gradient-to-r from-yellow-400 to-yellow-500 text-gray-900 text-xs font-bold px-2 py-1 rounded-full shadow-lg">
+                <span style="font-size: 14px;">👑</span>
+                <span>ADMIN</span>
+              </div>
+            ` : `
+              <div class="absolute top-2 right-2 flex items-center space-x-1 bg-gradient-to-r from-gray-600 to-gray-700 text-white text-xs font-semibold px-2 py-1 rounded-full shadow">
+                <span style="font-size: 14px;">🛡️</span>
+              </div>
+            `}
+            
             <div class="flex items-center space-x-3">
               <div class="bg-gradient-to-br from-indigo-500 to-purple-600 p-3 rounded-full shadow-lg ring-2 ring-indigo-400 ring-opacity-50">
                 <i class="fas fa-user"></i>
