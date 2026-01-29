@@ -8,6 +8,7 @@ import noticeRoutes from './routes/notices';
 import consultationRoutes from './routes/consultations';
 import contractRoutes from './routes/contracts';
 import installationRoutes from './routes/installations';
+import operationRoutes from './routes/operations';
 
 // 빌드 시점의 버전 (캐시 무효화용)
 const BUILD_VERSION = Date.now();
@@ -26,6 +27,7 @@ app.route('/api/notices', noticeRoutes);
 app.route('/api/consultations', consultationRoutes);
 app.route('/api/contracts', contractRoutes);
 app.route('/api/installations', installationRoutes);
+app.route('/api/operations', operationRoutes);
 
 // 정적 파일 제공
 app.use('/static/*', serveStatic({ root: './public' }));
@@ -196,7 +198,9 @@ app.get('/', async (c) => {
               </div>
               <div class="menu-text">
                 <p class="font-semibold text-white" id="userName">${user.name}</p>
-                <p class="text-xs text-indigo-300" id="userRole">${user.role === 'master' ? '마스터' : user.role === 'admin' ? '관리자' : '사용자'}</p>
+                <p class="text-xs text-indigo-300" id="userInfo">
+                  ${user.department || '부서 미지정'} · ${user.position || '직책 미지정'}
+                </p>
               </div>
             </div>
           </div>
@@ -327,6 +331,7 @@ app.get('/', async (c) => {
       <script src="/static/consultation.js?v=${BUILD_VERSION}"></script>
       <script src="/static/contract.js?v=${BUILD_VERSION}"></script>
       <script src="/static/installation.js?v=${BUILD_VERSION}"></script>
+      <script src="/static/operation.js?v=${BUILD_VERSION}"></script>
       <script src="/static/app.js?v=${BUILD_VERSION}"></script>
     </body>
     </html>
