@@ -14,20 +14,42 @@ consultations.get('/', requireAuth, async (c) => {
     const limit = parseInt(c.req.query('limit') || '50');
     const status = c.req.query('status') || '';
     const showAll = c.req.query('show_all') === 'true'; // 통계용: 이관 건 포함
+    const searchArchive = c.req.query('search_archive') === 'true'; // 이전 기록 검색
     const offset = (page - 1) * limit;
 
-    // WHERE 조건: 기본적으로 미이관 건만 표시
-    let whereClause = 'WHERE c.migrated_to_contract = 0';
+    let whereClause = '';
     const bindings = [];
     
-    // 통계용 조회 시 이관 건 포함
-    if (showAll) {
-      whereClause = '';
-    }
-    
-    if (status) {
-      whereClause += (whereClause ? ' AND' : 'WHERE') + ' c.status = ?';
-      bindings.push(status);
+    if (searchArchive) {
+      // 이전 기록 검색 모드: 계약확정 또는 취소 건만 조회
+      whereClause = 'WHERE c.status IN (?, ?)';
+      bindings.push('completed', 'cancelled');
+      
+      // 특정 상태 필터링
+      if (status && (status === 'completed' || status === 'cancelled')) {
+        whereClause = 'WHERE c.status = ?';
+        bindings.length = 0;
+        bindings.push(status);
+      }
+    } else {
+      // 일반 모드: 진행중인 건만 표시
+      // 1) 계약확정 건 제외
+      // 2) 취소 건은 최근 5건만 포함
+      whereClause = 'WHERE c.migrated_to_contract = 0 AND c.status != ?';
+      bindings.push('completed');
+      
+      // 통계용 조회 시 이관 건 포함
+      if (showAll) {
+        whereClause = 'WHERE c.status != ?';
+        bindings.length = 0;
+        bindings.push('completed');
+      }
+      
+      // 특정 상태 필터링
+      if (status) {
+        whereClause += ' AND c.status = ?';
+        bindings.push(status);
+      }
     }
 
     // 전체 개수
@@ -40,18 +62,46 @@ consultations.get('/', requireAuth, async (c) => {
     const total = countResult?.count || 0;
 
     // 목록 조회
-    const query = `
-      SELECT 
-        c.*,
-        u1.name as created_by_name,
-        u2.name as updated_by_name
-      FROM consultations c
-      LEFT JOIN users u1 ON c.created_by = u1.id
-      LEFT JOIN users u2 ON c.updated_by = u2.id
-      ${whereClause}
-      ORDER BY c.created_at DESC
-      LIMIT ? OFFSET ?
-    `;
+    let query = '';
+    
+    if (searchArchive) {
+      // 이전 기록 검색: 전체 조회
+      query = `
+        SELECT 
+          c.*,
+          u1.name as created_by_name,
+          u2.name as updated_by_name
+        FROM consultations c
+        LEFT JOIN users u1 ON c.created_by = u1.id
+        LEFT JOIN users u2 ON c.updated_by = u2.id
+        ${whereClause}
+        ORDER BY c.updated_at DESC
+        LIMIT ? OFFSET ?
+      `;
+    } else {
+      // 일반 모드: 취소 건은 최근 5건만 (서브쿼리 사용)
+      query = `
+        SELECT 
+          c.*,
+          u1.name as created_by_name,
+          u2.name as updated_by_name
+        FROM consultations c
+        LEFT JOIN users u1 ON c.created_by = u1.id
+        LEFT JOIN users u2 ON c.updated_by = u2.id
+        ${whereClause}
+          AND (
+            c.status != 'cancelled' 
+            OR c.id IN (
+              SELECT id FROM consultations 
+              WHERE status = 'cancelled' 
+              ORDER BY updated_at DESC 
+              LIMIT 5
+            )
+          )
+        ORDER BY c.created_at DESC
+        LIMIT ? OFFSET ?
+      `;
+    }
     
     bindings.push(limit, offset);
     const result = await c.env.DB

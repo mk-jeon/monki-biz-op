@@ -110,6 +110,10 @@ async function loadContractList(page = 1) {
               <i class="fas fa-file-contract mr-2 text-green-600"></i>
               계약현황
             </h2>
+              <button onclick="showContractArchiveSearchModal()" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition flex items-center">
+                <i class="fas fa-search mr-2"></i>
+                이전 기록 검색
+              </button>
             <div class="flex space-x-2">
               <button onclick="toggleContractViewMode()" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg transition flex items-center">
                 <i class="fas fa-${currentContractViewMode === 'list' ? 'th-large' : 'list'} mr-2"></i>
@@ -576,6 +580,10 @@ async function loadContractKanban() {
               <i class="fas fa-file-contract mr-2 text-green-600"></i>
               계약현황 - 칸반 보드
             </h2>
+              <button onclick="showContractArchiveSearchModal()" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition flex items-center">
+                <i class="fas fa-search mr-2"></i>
+                이전 기록 검색
+              </button>
             <div class="flex space-x-2">
               <button onclick="toggleContractViewMode()" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg transition flex items-center">
                 <i class="fas fa-list mr-2"></i>
@@ -787,3 +795,164 @@ async function handleContractDrop(e) {
   console.log('✅ 계약현황 모듈 로드 완료 - 모든 함수가 window 객체에 바인딩됨');
   
 })(); // IIFE 즉시 실행
+
+/**
+ * 이전 기록 검색 모달 표시 (계약현황)
+ */
+function showContractArchiveSearchModal() {
+  const modal = `
+    <div id="contractArchiveSearchModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onclick="if(event.target.id === 'contractArchiveSearchModal') closeContractArchiveSearchModal()">
+      <div class="bg-white rounded-lg shadow-xl w-full max-w-6xl max-h-[90vh] overflow-hidden" onclick="event.stopPropagation()">
+        <!-- 헤더 -->
+        <div class="p-6 border-b border-gray-200 bg-gray-50">
+          <div class="flex items-center justify-between">
+            <h3 class="text-2xl font-bold text-gray-800">
+              <i class="fas fa-search mr-2 text-gray-600"></i>
+              이전 기록 검색
+            </h3>
+            <button onclick="closeContractArchiveSearchModal()" class="text-gray-500 hover:text-gray-700 transition">
+              <i class="fas fa-times text-2xl"></i>
+            </button>
+          </div>
+          
+          <!-- 필터 -->
+          <div class="mt-4 flex space-x-2">
+            <button onclick="filterContractArchive('all')" id="filterContractAll" class="px-4 py-2 bg-indigo-600 text-white rounded-lg transition">
+              전체
+            </button>
+            <button onclick="filterContractArchive('completed')" id="filterContractCompleted" class="px-4 py-2 bg-gray-200 text-gray-700 hover:bg-gray-300 rounded-lg transition">
+              계약완료
+            </button>
+            <button onclick="filterContractArchive('cancelled')" id="filterContractCancelled" class="px-4 py-2 bg-gray-200 text-gray-700 hover:bg-gray-300 rounded-lg transition">
+              취소
+            </button>
+          </div>
+        </div>
+        
+        <!-- 콘텐츠 -->
+        <div id="contractArchiveSearchContent" class="p-6 overflow-y-auto" style="max-height: calc(90vh - 200px);">
+          <div class="flex items-center justify-center h-40">
+            <i class="fas fa-spinner fa-spin text-4xl text-indigo-600"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  document.body.insertAdjacentHTML('beforeend', modal);
+  
+  // 초기 데이터 로드
+  loadContractArchiveData('all');
+}
+
+/**
+ * 이전 기록 검색 모달 닫기 (계약현황)
+ */
+function closeContractArchiveSearchModal() {
+  const modal = document.getElementById('contractArchiveSearchModal');
+  if (modal) modal.remove();
+}
+
+/**
+ * 필터 변경 (계약현황)
+ */
+function filterContractArchive(type) {
+  // 버튼 스타일 변경
+  ['filterContractAll', 'filterContractCompleted', 'filterContractCancelled'].forEach(id => {
+    const btn = document.getElementById(id);
+    if (btn) {
+      if (id === `filterContract${type.charAt(0).toUpperCase() + type.slice(1)}` || (type === 'all' && id === 'filterContractAll')) {
+        btn.className = 'px-4 py-2 bg-indigo-600 text-white rounded-lg transition';
+      } else {
+        btn.className = 'px-4 py-2 bg-gray-200 text-gray-700 hover:bg-gray-300 rounded-lg transition';
+      }
+    }
+  });
+  
+  loadContractArchiveData(type);
+}
+
+/**
+ * 이전 기록 데이터 로드 (계약현황)
+ */
+async function loadContractArchiveData(type) {
+  try {
+    const content = document.getElementById('contractArchiveSearchContent');
+    content.innerHTML = '<div class="flex items-center justify-center h-40"><i class="fas fa-spinner fa-spin text-4xl text-indigo-600"></i></div>';
+    
+    let url = '/api/contracts?page=1&limit=100&search_archive=true';
+    if (type !== 'all') {
+      url += `&status=${type}`;
+    }
+    
+    const response = await axios.get(url);
+    const contracts = response.data.contracts || [];
+    
+    if (contracts.length === 0) {
+      content.innerHTML = `
+        <div class="text-center py-12">
+          <i class="fas fa-inbox text-gray-400 text-5xl mb-4"></i>
+          <p class="text-gray-600">검색 결과가 없습니다.</p>
+        </div>
+      `;
+      return;
+    }
+    
+    const statusMap = {
+      'completed': { text: '계약완료', color: 'bg-blue-500' },
+      'cancelled': { text: '취소', color: 'bg-red-500' }
+    };
+    
+    const tableHTML = `
+      <div class="overflow-x-auto">
+        <table class="w-full">
+          <thead class="bg-gray-100 border-b-2 border-gray-200">
+            <tr>
+              <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">ID</th>
+              <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">상태</th>
+              <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">고객명</th>
+              <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">전화번호</th>
+              <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">유입경로</th>
+              <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">옵션</th>
+              <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">등록일</th>
+              <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">관리</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-200">
+            ${contracts.map(item => `
+              <tr class="hover:bg-gray-50">
+                <td class="px-4 py-3 text-sm text-gray-900">${item.id}</td>
+                <td class="px-4 py-3">
+                  <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium text-white ${statusMap[item.status]?.color || 'bg-gray-500'}">
+                    ${statusMap[item.status]?.text || item.status}
+                  </span>
+                </td>
+                <td class="px-4 py-3 text-sm text-gray-900">${item.customer_name || '-'}</td>
+                <td class="px-4 py-3 text-sm text-gray-600">${item.phone || '-'}</td>
+                <td class="px-4 py-3 text-sm text-gray-600">${item.inflow_source || '-'}</td>
+                <td class="px-4 py-3 text-sm text-gray-600">${item.option || '-'}</td>
+                <td class="px-4 py-3 text-sm text-gray-600">${formatDate(item.created_at)}</td>
+                <td class="px-4 py-3">
+                  <button onclick="showContractDetail(${item.id})" class="text-indigo-600 hover:text-indigo-800 transition">
+                    <i class="fas fa-eye"></i>
+                  </button>
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+    `;
+    
+    content.innerHTML = tableHTML;
+  } catch (error) {
+    console.error('Load contract archive data error:', error);
+    const content = document.getElementById('contractArchiveSearchContent');
+    content.innerHTML = `
+      <div class="text-center py-12">
+        <i class="fas fa-exclamation-triangle text-red-500 text-5xl mb-4"></i>
+        <p class="text-red-600">데이터를 불러올 수 없습니다.</p>
+      </div>
+    `;
+  }
+}
