@@ -32,6 +32,8 @@ let currentContractPage = 1;
 let currentContractViewMode = 'list'; // 'list' or 'kanban'
 let inflowSources = []; // 유입경로 목록 (상담에서 가져옴)
 
+console.log('🔵 contract.js 시작 - 파일 로딩 중...');
+
 /**
  * 계약현황 페이지 로드
  */
@@ -46,6 +48,11 @@ async function loadContractPage() {
   loadContractList();
   console.log('✅ loadContractList 호출 완료');
 }
+console.log('🟢 loadContractPage 함수 정의 완료');
+
+// 즉시 window에 바인딩
+window.loadContractPage = loadContractPage;
+console.log('🟢 loadContractPage → window 바인딩 완료');
 
 /**
  * 유입경로 목록 로드
