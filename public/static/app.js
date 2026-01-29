@@ -309,6 +309,7 @@ function loadPage(page, addToHistory = true) {
   // 공지사항인 경우
   if (page === 'notice') {
     console.log('   📢 공지사항 페이지 로드');
+    mainContent.innerHTML = '<div class="flex items-center justify-center h-64"><i class="fas fa-spinner fa-spin text-4xl text-indigo-600"></i></div>';
     loadNoticeList(1);
     return;
   }
@@ -316,6 +317,7 @@ function loadPage(page, addToHistory = true) {
   // 상담현황인 경우
   if (page === 'consulting') {
     console.log('   💬 상담현황 페이지 로드');
+    mainContent.innerHTML = '<div class="flex items-center justify-center h-64"><i class="fas fa-spinner fa-spin text-4xl text-indigo-600"></i></div>';
     loadConsultationPage();
     return;
   }
@@ -323,6 +325,7 @@ function loadPage(page, addToHistory = true) {
   // 계약현황인 경우
   if (page === 'contract') {
     console.log('   📝 계약현황 페이지 로드');
+    mainContent.innerHTML = '<div class="flex items-center justify-center h-64"><i class="fas fa-spinner fa-spin text-4xl text-indigo-600"></i></div>';
     
     // 함수가 정의되어 있는지 확인
     if (typeof window.loadContractPage === 'function') {
