@@ -639,12 +639,14 @@ async function deleteNotice(id) {
 }
 
 /**
- * 날짜 포맷팅
+ * 날짜 포맷팅 (한국 시간 기준)
  */
 function formatDate(dateString) {
-  const date = new Date(dateString);
+  // UTC 시간을 한국 시간(UTC+9)으로 변환
+  const utcDate = new Date(dateString);
+  const kstDate = new Date(utcDate.getTime() + (9 * 60 * 60 * 1000));
   const now = new Date();
-  const diff = now - date;
+  const diff = now - kstDate;
   const diffHours = Math.floor(diff / (1000 * 60 * 60));
   const diffDays = Math.floor(diff / (1000 * 60 * 60 * 24));
 
@@ -655,6 +657,11 @@ function formatDate(dateString) {
   } else if (diffDays < 7) {
     return `${diffDays}일 전`;
   } else {
-    return date.toLocaleDateString('ko-KR');
+    return kstDate.toLocaleDateString('ko-KR', { 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric',
+      timeZone: 'Asia/Seoul'
+    });
   }
 }
