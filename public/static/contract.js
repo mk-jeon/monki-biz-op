@@ -110,11 +110,15 @@ async function loadContractList(page = 1) {
               <i class="fas fa-file-contract mr-2 text-green-600"></i>
               계약현황
             </h2>
+            <div class="flex space-x-2">
               <button onclick="showContractArchiveSearchModal()" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition flex items-center">
                 <i class="fas fa-search mr-2"></i>
                 이전 기록 검색
               </button>
-            <div class="flex space-x-2">
+              <button onclick="showMigrateToInstallationModal()" class="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg transition flex items-center">
+                <i class="fas fa-arrow-right mr-2"></i>
+                설치 이관
+              </button>
               <button onclick="toggleContractViewMode()" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg transition flex items-center">
                 <i class="fas fa-${currentContractViewMode === 'list' ? 'th-large' : 'list'} mr-2"></i>
                 ${currentContractViewMode === 'list' ? '칸반 보기' : '리스트 보기'}
@@ -580,11 +584,15 @@ async function loadContractKanban() {
               <i class="fas fa-file-contract mr-2 text-green-600"></i>
               계약현황 - 칸반 보드
             </h2>
+            <div class="flex space-x-2">
               <button onclick="showContractArchiveSearchModal()" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition flex items-center">
                 <i class="fas fa-search mr-2"></i>
                 이전 기록 검색
               </button>
-            <div class="flex space-x-2">
+              <button onclick="showMigrateToInstallationModal()" class="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg transition flex items-center">
+                <i class="fas fa-arrow-right mr-2"></i>
+                설치 이관
+              </button>
               <button onclick="toggleContractViewMode()" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg transition flex items-center">
                 <i class="fas fa-list mr-2"></i>
                 리스트 보기
@@ -792,6 +800,11 @@ async function handleContractDrop(e) {
   window.handleContractDragLeave = handleContractDragLeave;
   window.handleContractDrop = handleContractDrop;
   
+  // 설치 이관 관련 함수들
+  window.showMigrateToInstallationModal = showMigrateToInstallationModal;
+  window.closeMigrateToInstallationModal = closeMigrateToInstallationModal;
+  window.migrateToInstallation = migrateToInstallation;
+  
   console.log('✅ 계약현황 모듈 로드 완료 - 모든 함수가 window 객체에 바인딩됨');
   
 })(); // IIFE 즉시 실행
@@ -956,3 +969,117 @@ async function loadContractArchiveData(type) {
     `;
   }
 }
+
+/**
+ * 설치 이관 모달 표시
+ */
+async function showMigrateToInstallationModal() {
+  try {
+    console.log('🚀 설치이관 모달 열기 시도...');
+    // 계약완료 상태 건수 조회
+    const response = await axios.get('/api/contracts/stats/completed');
+    const { count, ids } = response.data;
+    console.log(`📊 계약완료 건수: ${count}건, IDs:`, ids);
+
+    if (count === 0) {
+      alert('계약완료 상태인 계약이 없습니다.');
+      return;
+    }
+
+    const modal = `
+      <div id="migrateToInstallationModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onclick="if(event.target.id === 'migrateToInstallationModal') closeMigrateToInstallationModal()">
+        <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-md" onclick="event.stopPropagation()">
+          <h3 class="text-xl font-bold text-gray-800 mb-4">
+            <i class="fas fa-arrow-right mr-2 text-orange-600"></i>
+            설치현황으로 이관
+          </h3>
+          
+          <div class="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <p class="text-lg font-semibold text-blue-800 mb-2">
+              <i class="fas fa-check-circle mr-2"></i>
+              계약완료 상태: <span class="text-2xl">${count}</span>건
+            </p>
+            <p class="text-sm text-blue-600">
+              해당 계약 건들을 설치현황 페이지로 이관하시겠습니까?
+            </p>
+          </div>
+
+          <div class="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded">
+            <p class="text-xs text-yellow-800">
+              <i class="fas fa-exclamation-triangle mr-1"></i>
+              <strong>참고:</strong> 이관 후에도 계약현황 데이터는 유지됩니다.
+            </p>
+          </div>
+
+          <div class="flex space-x-3">
+            <button onclick="migrateToInstallation(${JSON.stringify(ids)})" class="flex-1 bg-orange-600 hover:bg-orange-700 text-white font-semibold py-3 px-4 rounded-lg transition">
+              <i class="fas fa-check mr-2"></i>
+              이관 확정 (${count}건)
+            </button>
+            <button onclick="closeMigrateToInstallationModal()" class="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold py-3 px-4 rounded-lg transition">
+              <i class="fas fa-times mr-2"></i>
+              취소
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    document.body.insertAdjacentHTML('beforeend', modal);
+    console.log('✅ 설치이관 모달 렌더링 완료');
+  } catch (error) {
+    console.error('❌ Show migrate to installation modal error:', error);
+    alert('이관 정보를 불러올 수 없습니다.');
+  }
+}
+
+/**
+ * 설치 이관 모달 닫기
+ */
+function closeMigrateToInstallationModal() {
+  const modal = document.getElementById('migrateToInstallationModal');
+  if (modal) modal.remove();
+  console.log('✅ 설치이관 모달 닫기 완료');
+}
+
+/**
+ * 설치현황으로 이관 실행
+ */
+async function migrateToInstallation(ids) {
+  try {
+    console.log('🚀 설치이관 실행 시작...', ids);
+    
+    // TODO: 설치현황 API가 구현되면 활성화
+    // const response = await axios.post('/api/installations/migrate', {
+    //   contract_ids: ids
+    // });
+
+    // const { successCount, errorCount, errors } = response.data;
+
+    // let message = `이관 완료!\n성공: ${successCount}건`;
+    // if (errorCount > 0) {
+    //   message += `\n실패: ${errorCount}건`;
+    //   if (errors && errors.length > 0) {
+    //     message += '\n\n에러:\n' + errors.join('\n');
+    //   }
+    // }
+
+    // alert(message);
+    
+    // 임시: 설치현황 API 미구현 상태
+    alert(`설치현황 기능은 준비 중입니다.\n계약완료 건 ${ids.length}건이 이관 대기 중입니다.`);
+    
+    closeMigrateToInstallationModal();
+    
+    // 리스트 새로고침
+    if (currentContractViewMode === 'list') {
+      loadContractList(currentContractPage);
+    } else {
+      loadContractKanban();
+    }
+  } catch (error) {
+    console.error('❌ Migrate to installation error:', error);
+    alert(error.response?.data?.error || '이관 중 오류가 발생했습니다.');
+  }
+}
+

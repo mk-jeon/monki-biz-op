@@ -336,6 +336,35 @@ contracts.put('/:id/status', requireAuth, async (c) => {
 });
 
 /**
+ * GET /api/contracts/stats/completed
+ * 계약완료 건수 및 ID 목록 조회 (설치이관용)
+ */
+contracts.get('/stats/completed', requireAuth, async (c) => {
+  try {
+    const result = await c.env.DB
+      .prepare(`
+        SELECT 
+          COUNT(*) as count,
+          GROUP_CONCAT(id) as ids
+        FROM contracts
+        WHERE status = 'completed' 
+          AND (migrated_to_installation = 0 OR migrated_to_installation IS NULL)
+      `)
+      .first<{ count: number; ids: string }>();
+
+    const count = result?.count || 0;
+    const ids = result?.ids 
+      ? result.ids.split(',').map((id: string) => parseInt(id.trim(), 10)) 
+      : [];
+
+    return c.json({ count, ids });
+  } catch (error) {
+    console.error('Get completed stats error:', error);
+    return c.json({ error: '통계를 불러올 수 없습니다.' }, 500);
+  }
+});
+
+/**
  * DELETE /api/contracts/:id
  * 계약현황 삭제
  */
