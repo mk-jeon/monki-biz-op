@@ -295,6 +295,7 @@ app.get('/', async (c) => {
         // 사용자 정보
         const currentUser = ${JSON.stringify({ id: user.id, username: user.username, name: user.name, role: user.role })};
       </script>
+      <script src="/static/table-sort.js?v=${BUILD_VERSION}"></script>
       <script src="/static/notice.js?v=${BUILD_VERSION}"></script>
       <script src="/static/consultation.js?v=${BUILD_VERSION}"></script>
       <script src="/static/contract.js?v=${BUILD_VERSION}"></script>

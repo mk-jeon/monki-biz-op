@@ -3,6 +3,8 @@
 let currentConsultationPage = 1;
 let currentViewMode = 'list'; // 'list' or 'kanban'
 let inflowSources = []; // 유입경로 목록
+let consultationSortField = null; // 정렬 필드
+let consultationSortOrder = 0; // 0: 기본, 1: 오름차순, 2: 내림차순
 
 /**
  * 상담현황 페이지 로드

@@ -35,6 +35,13 @@ let currentInstallationPage = 1;
 let currentInstallationViewMode = 'list';
 
 /**
+ * 설치 정렬 처리 함수
+ */
+function handleSort_installation(field) {
+  window.handleSort(field, 'installation', () => loadInstallationList(currentInstallationPage));
+}
+
+/**
  * 설치현황 페이지 로드
  */
 async function loadInstallationPage() {
@@ -62,7 +69,11 @@ async function loadInstallationList(page = 1) {
   console.log(`✅ loadInstallationList 실행 (page=${page})`);
   try {
     const response = await axios.get(`/api/installations?page=${page}&limit=50`);
-    const { installations, pagination } = response.data;
+    let { installations, pagination } = response.data;
+    
+    // 정렬 적용
+    const sortState = window.sortStates.installation;
+    installations = window.sortData(installations, sortState.field, sortState.order, 'installation');
 
     const statusMap = {
       'waiting': { text: '설치대기', color: 'bg-gray-500', icon: 'fa-clock' },
@@ -103,14 +114,44 @@ async function loadInstallationList(page = 1) {
           <table class="w-full">
             <thead class="bg-gray-50 border-b-2 border-gray-200">
               <tr>
-                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">ID</th>
-                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">상태</th>
-                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">고객명</th>
-                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">전화번호</th>
+                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase cursor-pointer hover:bg-gray-100 transition" onclick="handleSort_installation('id')">
+                  <div class="flex items-center">
+                    ID
+                    ${window.getSortIcon('id', sortState.field, sortState.order)}
+                  </div>
+                </th>
+                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase cursor-pointer hover:bg-gray-100 transition" onclick="handleSort_installation('status')">
+                  <div class="flex items-center">
+                    상태
+                    ${window.getSortIcon('status', sortState.field, sortState.order)}
+                  </div>
+                </th>
+                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase cursor-pointer hover:bg-gray-100 transition" onclick="handleSort_installation('customer_name')">
+                  <div class="flex items-center">
+                    고객명
+                    ${window.getSortIcon('customer_name', sortState.field, sortState.order)}
+                  </div>
+                </th>
+                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase cursor-pointer hover:bg-gray-100 transition" onclick="handleSort_installation('phone')">
+                  <div class="flex items-center">
+                    전화번호
+                    ${window.getSortIcon('phone', sortState.field, sortState.order)}
+                  </div>
+                </th>
                 <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">플래그</th>
                 <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">체크리스트</th>
-                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">등록일</th>
-                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">등록자</th>
+                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase cursor-pointer hover:bg-gray-100 transition" onclick="handleSort_installation('created_at')">
+                  <div class="flex items-center">
+                    등록일
+                    ${window.getSortIcon('created_at', sortState.field, sortState.order)}
+                  </div>
+                </th>
+                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase cursor-pointer hover:bg-gray-100 transition" onclick="handleSort_installation('created_by_name')">
+                  <div class="flex items-center">
+                    등록자
+                    ${window.getSortIcon('created_by_name', sortState.field, sortState.order)}
+                  </div>
+                </th>
                 <th class="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase">관리</th>
               </tr>
             </thead>
@@ -591,6 +632,7 @@ async function migrateToOperation(ids) {
   window.handleInstallationDragOver = handleInstallationDragOver;
   window.handleInstallationDragLeave = handleInstallationDragLeave;
   window.handleInstallationDrop = handleInstallationDrop;
+  window.handleSort_installation = handleSort_installation;
   
   console.log('✅ 설치현황 모듈 로드 완료 - 모든 함수가 window 객체에 바인딩됨');
   
