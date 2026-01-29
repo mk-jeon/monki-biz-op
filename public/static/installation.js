@@ -1263,7 +1263,7 @@ function closeStatusChangeModal() {
 
 async function changeInstallationStatus(id, newStatus) {
   try {
-    await axios.patch(`/api/installations/${id}/status`, { status: newStatus });
+    await axios.put(`/api/installations/${id}/status`, { status: newStatus });
     closeStatusChangeModal();
     alert('상태가 변경되었습니다.');
     

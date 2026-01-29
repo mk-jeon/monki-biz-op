@@ -347,10 +347,10 @@ installations.put('/:id', requireAuth, async (c) => {
 });
 
 /**
- * PUT /api/installations/:id/status
- * 상태 변경 (드래그앤드롭용)
+ * PUT/PATCH /api/installations/:id/status
+ * 상태 변경 (드래그앤드롭 및 리스트용)
  */
-installations.put('/:id/status', requireAuth, async (c) => {
+const updateStatus = async (c) => {
   try {
     const user = c.get('user');
     const id = c.req.param('id');
@@ -374,7 +374,10 @@ installations.put('/:id/status', requireAuth, async (c) => {
     console.error('Update status error:', error);
     return c.json({ error: '상태 변경 중 오류가 발생했습니다.' }, 500);
   }
-});
+};
+
+installations.put('/:id/status', requireAuth, updateStatus);
+installations.patch('/:id/status', requireAuth, updateStatus);
 
 /**
  * GET /api/installations/stats/completed

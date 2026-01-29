@@ -545,15 +545,20 @@ async function viewOperationDetail(id) {
       'cancelled': '취소'
     };
 
+    // 모든 조건 완료 여부 확인
+    const isAllCompleted = op.contract_document_url && op.install_certificate_url && op.install_photo_url && op.drive_url;
+    const canConfirm = isAllCompleted && op.status !== 'completed' && op.status !== 'cancelled';
+
     const modalHTML = `
       <div id="operationDetailModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div class="bg-white rounded-lg p-8 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+        <div class="bg-white rounded-lg p-8 max-w-3xl w-full mx-4 max-h-[90vh] overflow-y-auto">
           <h3 class="text-2xl font-bold mb-6 text-gray-800">
             <i class="fas fa-info-circle mr-2 text-orange-600"></i>
             운영등재 상세 정보
           </h3>
           
-          <div class="space-y-4">
+          <div class="space-y-6">
+            <!-- 기본 정보 -->
             <div class="grid grid-cols-2 gap-4">
               <div>
                 <label class="text-sm font-semibold text-gray-600">ID</label>
@@ -576,42 +581,92 @@ async function viewOperationDetail(id) {
               </div>
             </div>
 
-            ${op.notes ? `
-              <div>
-                <label class="text-sm font-semibold text-gray-600">메모</label>
-                <p class="text-gray-800 whitespace-pre-wrap">${op.notes}</p>
-              </div>
-            ` : ''}
-
-            <div class="grid grid-cols-2 gap-4">
-              <div>
-                <label class="text-sm font-semibold text-gray-600">등록일</label>
-                <p class="text-gray-800">${formatDate(op.created_at)}</p>
-              </div>
-              <div>
-                <label class="text-sm font-semibold text-gray-600">등록자</label>
-                <p class="text-gray-800">${op.created_by_name || '-'}</p>
+            <!-- 제출 서류 체크리스트 -->
+            <div class="border-t pt-4">
+              <h4 class="font-semibold text-gray-700 mb-3">
+                <i class="fas fa-clipboard-check mr-2"></i>
+                제출 서류 체크리스트
+              </h4>
+              <div class="space-y-2">
+                <div class="flex items-center justify-between p-3 rounded-lg ${op.contract_document_url ? 'bg-green-50' : 'bg-red-50'}">
+                  <span class="flex items-center">
+                    <i class="fas fa-${op.contract_document_url ? 'check-circle text-green-600' : 'times-circle text-red-600'} mr-2"></i>
+                    계약서
+                  </span>
+                  ${op.contract_document_url ? `<a href="${op.contract_document_url}" target="_blank" class="text-blue-600 hover:underline text-sm"><i class="fas fa-external-link-alt"></i> 보기</a>` : '<span class="text-red-600 text-sm">미제출</span>'}
+                </div>
+                <div class="flex items-center justify-between p-3 rounded-lg ${op.install_certificate_url ? 'bg-green-50' : 'bg-orange-50'}">
+                  <span class="flex items-center">
+                    <i class="fas fa-${op.install_certificate_url ? 'check-circle text-green-600' : 'times-circle text-orange-600'} mr-2"></i>
+                    설치확인서
+                  </span>
+                  ${op.install_certificate_url ? `<a href="${op.install_certificate_url}" target="_blank" class="text-blue-600 hover:underline text-sm"><i class="fas fa-external-link-alt"></i> 보기</a>` : '<span class="text-orange-600 text-sm">미제출</span>'}
+                </div>
+                <div class="flex items-center justify-between p-3 rounded-lg ${op.install_photo_url ? 'bg-green-50' : 'bg-yellow-50'}">
+                  <span class="flex items-center">
+                    <i class="fas fa-${op.install_photo_url ? 'check-circle text-green-600' : 'times-circle text-yellow-600'} mr-2"></i>
+                    설치사진
+                  </span>
+                  ${op.install_photo_url ? `<a href="${op.install_photo_url}" target="_blank" class="text-blue-600 hover:underline text-sm"><i class="fas fa-external-link-alt"></i> 보기</a>` : '<span class="text-yellow-600 text-sm">미제출</span>'}
+                </div>
+                <div class="flex items-center justify-between p-3 rounded-lg ${op.drive_url ? 'bg-green-50' : 'bg-blue-50'}">
+                  <span class="flex items-center">
+                    <i class="fas fa-${op.drive_url ? 'check-circle text-green-600' : 'times-circle text-blue-600'} mr-2"></i>
+                    드라이브 업로드
+                  </span>
+                  ${op.drive_url ? `<a href="${op.drive_url}" target="_blank" class="text-blue-600 hover:underline text-sm"><i class="fas fa-external-link-alt"></i> 보기</a>` : '<span class="text-blue-600 text-sm">미제출</span>'}
+                </div>
               </div>
             </div>
 
-            ${op.updated_at ? `
-              <div class="grid grid-cols-2 gap-4">
+            ${op.memo ? `
+              <div class="border-t pt-4">
+                <label class="text-sm font-semibold text-gray-600 block mb-2">메모</label>
+                <p class="text-gray-800 whitespace-pre-wrap bg-gray-50 p-3 rounded-lg">${op.memo}</p>
+              </div>
+            ` : ''}
+
+            <!-- 등록/수정 정보 -->
+            <div class="border-t pt-4 grid grid-cols-2 gap-4 text-sm text-gray-600">
+              <div>
+                <label class="font-semibold">등록일</label>
+                <p class="text-gray-800">${formatDate(op.created_at)}</p>
+              </div>
+              <div>
+                <label class="font-semibold">등록자</label>
+                <p class="text-gray-800">${op.created_by_name || '-'}</p>
+              </div>
+              ${op.updated_at ? `
                 <div>
-                  <label class="text-sm font-semibold text-gray-600">최종 수정일</label>
+                  <label class="font-semibold">최종 수정일</label>
                   <p class="text-gray-800">${formatDate(op.updated_at)}</p>
                 </div>
                 <div>
-                  <label class="text-sm font-semibold text-gray-600">최종 수정자</label>
+                  <label class="font-semibold">최종 수정자</label>
                   <p class="text-gray-800">${op.updated_by_name || '-'}</p>
                 </div>
-              </div>
-            ` : ''}
+              ` : ''}
+            </div>
           </div>
 
-          <div class="flex justify-end space-x-3 pt-6">
-            <button onclick="closeOperationDetailModal()" class="px-6 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 rounded-lg transition">
-              닫기
+          <!-- 버튼 영역 -->
+          <div class="flex justify-between items-center pt-6 border-t mt-6">
+            <button onclick="showOperationEditModal(${op.id})" class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition">
+              <i class="fas fa-edit mr-2"></i>
+              수정
             </button>
+            <div class="flex space-x-3">
+              ${canConfirm ? `
+                <button onclick="confirmOperationComplete(${op.id})" class="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition animate-pulse">
+                  <i class="fas fa-check-double mr-2"></i>
+                  운영등재 확정
+                </button>
+              ` : ''}
+              <button onclick="closeOperationDetailModal()" class="px-6 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 rounded-lg transition">
+                <i class="fas fa-times mr-2"></i>
+                닫기
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -628,6 +683,184 @@ async function viewOperationDetail(id) {
 function closeOperationDetailModal() {
   const modal = document.getElementById('operationDetailModal');
   if (modal) modal.remove();
+}
+
+/**
+ * 운영등재 수정 모달
+ */
+async function showOperationEditModal(id) {
+  try {
+    const response = await axios.get(`/api/operations/${id}`);
+    const op = response.data.data;
+
+    const modalHTML = `
+      <div id="operationEditModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg p-8 max-w-3xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+          <h3 class="text-2xl font-bold mb-6 text-gray-800">
+            <i class="fas fa-edit mr-2 text-blue-600"></i>
+            운영등재 수정
+          </h3>
+          
+          <form id="operationEditForm" class="space-y-6">
+            <!-- 기본 정보 -->
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">고객명</label>
+                <input type="text" id="editCustomerName" value="${op.customer_name || ''}" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" required>
+              </div>
+              <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">전화번호</label>
+                <input type="tel" id="editPhone" value="${op.phone || ''}" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+              </div>
+            </div>
+
+            <!-- 상태 -->
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-2">상태</label>
+              <select id="editStatus" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                <option value="contract_pending" ${op.status === 'contract_pending' ? 'selected' : ''}>계약서 미진행</option>
+                <option value="install_cert_pending" ${op.status === 'install_cert_pending' ? 'selected' : ''}>설치확인서 미진행</option>
+                <option value="install_photo_pending" ${op.status === 'install_photo_pending' ? 'selected' : ''}>설치사진 미진행</option>
+                <option value="drive_upload_pending" ${op.status === 'drive_upload_pending' ? 'selected' : ''}>드라이브 업로드 미진행</option>
+                <option value="completed" ${op.status === 'completed' ? 'selected' : ''}>운영등재완료</option>
+                <option value="cancelled" ${op.status === 'cancelled' ? 'selected' : ''}>취소</option>
+              </select>
+            </div>
+
+            <!-- 제출 서류 URL -->
+            <div class="border-t pt-4">
+              <h4 class="font-semibold text-gray-700 mb-3">제출 서류 URL</h4>
+              <div class="space-y-3">
+                <div>
+                  <label class="block text-sm font-semibold text-gray-700 mb-2">
+                    <i class="fas fa-file-contract mr-1 text-red-600"></i>
+                    계약서 URL
+                  </label>
+                  <input type="url" id="editContractUrl" value="${op.contract_document_url || ''}" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="https://...">
+                </div>
+                <div>
+                  <label class="block text-sm font-semibold text-gray-700 mb-2">
+                    <i class="fas fa-certificate mr-1 text-orange-600"></i>
+                    설치확인서 URL
+                  </label>
+                  <input type="url" id="editCertUrl" value="${op.install_certificate_url || ''}" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="https://...">
+                </div>
+                <div>
+                  <label class="block text-sm font-semibold text-gray-700 mb-2">
+                    <i class="fas fa-image mr-1 text-yellow-600"></i>
+                    설치사진 URL
+                  </label>
+                  <input type="url" id="editPhotoUrl" value="${op.install_photo_url || ''}" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="https://...">
+                </div>
+                <div>
+                  <label class="block text-sm font-semibold text-gray-700 mb-2">
+                    <i class="fas fa-cloud mr-1 text-blue-600"></i>
+                    드라이브 URL
+                  </label>
+                  <input type="url" id="editDriveUrl" value="${op.drive_url || ''}" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="https://...">
+                </div>
+              </div>
+            </div>
+
+            <!-- 메모 -->
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-2">메모</label>
+              <textarea id="editMemo" rows="3" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">${op.memo || ''}</textarea>
+            </div>
+
+            <!-- 버튼 -->
+            <div class="flex justify-end space-x-3 pt-4 border-t">
+              <button type="button" onclick="closeOperationEditModal()" class="px-6 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 rounded-lg transition">
+                <i class="fas fa-times mr-2"></i>
+                취소
+              </button>
+              <button type="submit" class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition">
+                <i class="fas fa-save mr-2"></i>
+                저장
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    `;
+
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+
+    // 폼 제출 이벤트
+    document.getElementById('operationEditForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      await updateOperation(id);
+    });
+
+  } catch (error) {
+    console.error('운영등재 수정 모달 오류:', error);
+    alert('수정 모달을 불러올 수 없습니다.');
+  }
+}
+
+function closeOperationEditModal() {
+  const modal = document.getElementById('operationEditModal');
+  if (modal) modal.remove();
+}
+
+/**
+ * 운영등재 정보 업데이트
+ */
+async function updateOperation(id) {
+  try {
+    const data = {
+      customer_name: document.getElementById('editCustomerName').value,
+      phone: document.getElementById('editPhone').value,
+      status: document.getElementById('editStatus').value,
+      contract_document_url: document.getElementById('editContractUrl').value || null,
+      install_certificate_url: document.getElementById('editCertUrl').value || null,
+      install_photo_url: document.getElementById('editPhotoUrl').value || null,
+      drive_url: document.getElementById('editDriveUrl').value || null,
+      memo: document.getElementById('editMemo').value || null
+    };
+
+    await axios.put(`/api/operations/${id}`, data);
+    
+    alert('수정되었습니다.');
+    closeOperationEditModal();
+    closeOperationDetailModal();
+    
+    // 리스트 새로고침
+    if (currentOperationViewMode === 'list') {
+      loadOperationList(currentOperationPage);
+    } else {
+      loadOperationKanban();
+    }
+  } catch (error) {
+    console.error('운영등재 수정 오류:', error);
+    alert(error.response?.data?.error || '수정 중 오류가 발생했습니다.');
+  }
+}
+
+/**
+ * 운영등재 확정 (가맹점현황으로 이관)
+ */
+async function confirmOperationComplete(id) {
+  if (!confirm('운영등재를 확정하시겠습니까?\n\n확정 후 가맹점현황으로 이동됩니다.')) return;
+
+  try {
+    // 상태를 completed로 변경
+    await axios.put(`/api/operations/${id}`, { status: 'completed' });
+    
+    alert('✅ 운영등재가 확정되었습니다!\n가맹점현황으로 이동되었습니다.');
+    
+    closeOperationDetailModal();
+    
+    // 리스트 새로고침
+    if (currentOperationViewMode === 'list') {
+      loadOperationList(currentOperationPage);
+    } else {
+      loadOperationKanban();
+    }
+  } catch (error) {
+    console.error('운영등재 확정 오류:', error);
+    alert(error.response?.data?.error || '확정 중 오류가 발생했습니다.');
+  }
 }
 
 /**
@@ -657,6 +890,10 @@ window.showAddOperationModal = showAddOperationModal;
 window.closeAddOperationModal = closeAddOperationModal;
 window.viewOperationDetail = viewOperationDetail;
 window.closeOperationDetailModal = closeOperationDetailModal;
+window.showOperationEditModal = showOperationEditModal;
+window.closeOperationEditModal = closeOperationEditModal;
+window.updateOperation = updateOperation;
+window.confirmOperationComplete = confirmOperationComplete;
 window.deleteOperation = deleteOperation;
 window.handleDragStart_operation = handleDragStart_operation;
 window.handleDragEnd_operation = handleDragEnd_operation;

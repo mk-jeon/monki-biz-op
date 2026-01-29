@@ -1070,15 +1070,24 @@ async function migrateToInstallation(ids) {
 
     const { successCount, errorCount, errors } = response.data;
 
-    let message = `이관 완료!\n성공: ${successCount}건`;
-    if (errorCount > 0) {
-      message += `\n실패: ${errorCount}건`;
+    // 성공한 건이 있으면 성공으로 처리
+    if (successCount > 0) {
+      let message = `이관 완료!\n성공: ${successCount}건`;
+      if (errorCount > 0) {
+        message += `\n실패: ${errorCount}건`;
+        if (errors && errors.length > 0) {
+          message += '\n\n에러:\n' + errors.join('\n');
+        }
+      }
+      alert(message);
+    } else {
+      // 모두 실패한 경우만 에러
+      let message = `이관 실패\n실패: ${errorCount}건`;
       if (errors && errors.length > 0) {
         message += '\n\n에러:\n' + errors.join('\n');
       }
+      alert(message);
     }
-
-    alert(message);
     
     closeMigrateToInstallationModal();
     
