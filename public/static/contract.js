@@ -8,11 +8,15 @@ let inflowSources = []; // 유입경로 목록 (상담에서 가져옴)
  * 계약현황 페이지 로드
  */
 async function loadContractPage() {
+  console.log('✅ loadContractPage 함수 호출됨');
   // 유입경로 목록 먼저 로드
   await loadInflowSourcesForContract();
+  console.log('✅ loadInflowSourcesForContract 완료');
   
   // 리스트 모드로 시작
+  console.log('✅ loadContractList 호출 직전');
   loadContractList();
+  console.log('✅ loadContractList 호출 완료');
 }
 
 /**
@@ -44,8 +48,11 @@ function toggleContractViewMode() {
  * 계약현황 리스트 조회
  */
 async function loadContractList(page = 1) {
+  console.log(`✅ loadContractList 실행 (page=${page})`);
   try {
+    console.log(`📡 API 호출 시작: /api/contracts?page=${page}&limit=50`);
     const response = await axios.get(`/api/contracts?page=${page}&limit=50`);
+    console.log('✅ API 응답 받음:', response.data);
     const { contracts, pagination } = response.data;
 
     const statusMap = {
@@ -162,9 +169,10 @@ async function loadContractList(page = 1) {
     `;
 
     document.getElementById('mainContent').innerHTML = content;
+    console.log('✅ HTML 렌더링 완료');
     currentContractPage = page;
   } catch (error) {
-    console.error('Load contract list error:', error);
+    console.error('❌ Load contract list error:', error);
     alert('계약 목록을 불러올 수 없습니다.');
   }
 }
