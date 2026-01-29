@@ -106,10 +106,6 @@ async function loadOperationList(page = 1) {
                 <i class="fas ${currentOperationViewMode === 'list' ? 'fa-th' : 'fa-list'} mr-2"></i>
                 ${currentOperationViewMode === 'list' ? '칸반 보기' : '리스트 보기'}
               </button>
-              <button onclick="showAddOperationModal()" class="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg transition flex items-center">
-                <i class="fas fa-plus mr-2"></i>
-                신규 등록
-              </button>
             </div>
           </div>
         </div>
@@ -130,6 +126,9 @@ async function loadOperationList(page = 1) {
                 </th>
                 <th onclick="handleSort_operation('phone')" class="sortable-header px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider cursor-pointer hover:bg-gray-100">
                   전화번호 <i class="fas fa-sort ml-1"></i>
+                </th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                  미달 조건
                 </th>
                 <th onclick="handleSort_operation('created_at')" class="sortable-header px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider cursor-pointer hover:bg-gray-100">
                   등록일 <i class="fas fa-sort ml-1"></i>
@@ -153,6 +152,22 @@ async function loadOperationList(page = 1) {
                 </tr>
               ` : operations.map(op => {
                 const status = statusMap[op.status] || { text: op.status, color: 'bg-gray-500', icon: 'fa-question' };
+                
+                // 미달 조건 체크
+                const missingItems = [];
+                if (!op.contract_document_url) {
+                  missingItems.push('<span class="bg-red-100 text-red-700 text-xs px-2 py-1 rounded mr-1 mb-1 inline-block">계약서 미진행</span>');
+                }
+                if (!op.install_certificate_url) {
+                  missingItems.push('<span class="bg-orange-100 text-orange-700 text-xs px-2 py-1 rounded mr-1 mb-1 inline-block">설치확인서 미진행</span>');
+                }
+                if (!op.install_photo_url) {
+                  missingItems.push('<span class="bg-yellow-100 text-yellow-700 text-xs px-2 py-1 rounded mr-1 mb-1 inline-block">설치사진 미진행</span>');
+                }
+                if (!op.drive_url) {
+                  missingItems.push('<span class="bg-blue-100 text-blue-700 text-xs px-2 py-1 rounded mr-1 mb-1 inline-block">드라이브 미진행</span>');
+                }
+                
                 return `
                   <tr class="hover:bg-gray-50 transition">
                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
@@ -169,6 +184,11 @@ async function loadOperationList(page = 1) {
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                       ${op.phone || '-'}
+                    </td>
+                    <td class="px-6 py-4 text-sm">
+                      <div class="flex flex-wrap max-w-xs">
+                        ${missingItems.length > 0 ? missingItems.join('') : '<span class="text-green-600">✓ 모두 완료</span>'}
+                      </div>
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                       ${formatDate(op.created_at)}
@@ -277,10 +297,6 @@ async function loadOperationKanban() {
               <button onclick="toggleOperationViewMode()" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition flex items-center">
                 <i class="fas fa-list mr-2"></i>
                 리스트 보기
-              </button>
-              <button onclick="showAddOperationModal()" class="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg transition flex items-center">
-                <i class="fas fa-plus mr-2"></i>
-                신규 등록
               </button>
             </div>
           </div>
