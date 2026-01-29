@@ -166,9 +166,16 @@ document.getElementById('toggleSidebar').addEventListener('click', () => {
 });
 
 // 대시보드 카드 클릭
-document.querySelectorAll('.dashboard-card').forEach(card => {
+console.log('🔍 대시보드 카드 검색 중...');
+const dashboardCards = document.querySelectorAll('.dashboard-card');
+console.log(`✅ 발견된 대시보드 카드 개수: ${dashboardCards.length}`);
+
+dashboardCards.forEach((card, index) => {
+  const page = card.getAttribute('data-page');
+  console.log(`  - 카드 ${index + 1}: data-page="${page}"`);
+  
   card.addEventListener('click', () => {
-    const page = card.getAttribute('data-page');
+    console.log(`🖱️ 카드 클릭됨: ${page}`);
     loadPage(page);
   });
 });
@@ -177,35 +184,52 @@ document.querySelectorAll('.dashboard-card').forEach(card => {
 let history = ['dashboard'];
 let historyIndex = 0;
 
+console.log('🧭 네비게이션 버튼 초기화');
+
 document.getElementById('homeButton').addEventListener('click', () => {
+  console.log('🏠 홈 버튼 클릭');
   loadPage('dashboard');
 });
 
 document.getElementById('backButton').addEventListener('click', () => {
+  console.log(`⬅️ 뒤로 버튼 클릭 (historyIndex: ${historyIndex}, history: ${JSON.stringify(history)})`);
   if (historyIndex > 0) {
     historyIndex--;
+    console.log(`   → 이동: ${history[historyIndex]}`);
     loadPage(history[historyIndex], false);
+  } else {
+    console.log('   → 더 이상 뒤로 갈 수 없음');
   }
 });
 
 document.getElementById('forwardButton').addEventListener('click', () => {
+  console.log(`➡️ 앞으로 버튼 클릭 (historyIndex: ${historyIndex}, history: ${JSON.stringify(history)})`);
   if (historyIndex < history.length - 1) {
     historyIndex++;
+    console.log(`   → 이동: ${history[historyIndex]}`);
     loadPage(history[historyIndex], false);
+  } else {
+    console.log('   → 더 이상 앞으로 갈 수 없음');
   }
 });
 
 // 페이지 로드
 function loadPage(page, addToHistory = true) {
+  console.log(`📄 loadPage 호출: page="${page}", addToHistory=${addToHistory}`);
+  
   if (addToHistory) {
     // 현재 위치 이후의 히스토리 제거
     history = history.slice(0, historyIndex + 1);
     history.push(page);
     historyIndex = history.length - 1;
+    console.log(`   📚 히스토리 업데이트: ${JSON.stringify(history)}, index=${historyIndex}`);
   }
 
   const mainContent = document.getElementById('mainContent');
   const pageTitle = document.getElementById('pageTitle');
+  
+  console.log(`   🎯 mainContent 요소: ${mainContent ? '✅ 존재' : '❌ 없음'}`);
+  console.log(`   🎯 pageTitle 요소: ${pageTitle ? '✅ 존재' : '❌ 없음'}`);
 
   // 페이지별 타이틀
   const pageTitles = {
@@ -236,32 +260,38 @@ function loadPage(page, addToHistory = true) {
   };
 
   pageTitle.textContent = pageTitles[page] || '페이지';
+  console.log(`   📌 페이지 타이틀 설정: "${pageTitle.textContent}"`);
 
   // 대시보드인 경우
   if (page === 'dashboard') {
+    console.log('   🏠 대시보드로 이동 (페이지 새로고침)');
     window.location.reload();
     return;
   }
 
   // 공지사항인 경우
   if (page === 'notice') {
+    console.log('   📢 공지사항 페이지 로드');
     loadNoticeList(1);
     return;
   }
 
   // 상담현황인 경우
   if (page === 'consulting') {
+    console.log('   💬 상담현황 페이지 로드');
     loadConsultationPage();
     return;
   }
 
   // 계약현황인 경우
   if (page === 'contract') {
+    console.log('   📝 계약현황 페이지 로드');
     loadContractPage();
     return;
   }
 
   // 다른 페이지 (준비중)
+  console.log(`   🚧 준비중 페이지: ${page}`);
   mainContent.innerHTML = `
     <div class="bg-white rounded-lg shadow-md p-8 text-center">
       <div class="inline-block p-6 bg-gray-100 rounded-full mb-4">
