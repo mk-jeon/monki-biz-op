@@ -781,6 +781,7 @@ async function handleContractDrop(e) {
   window.handleContractDragStart = handleContractDragStart;
   window.handleContractDragEnd = handleContractDragEnd;
   window.handleContractDragOver = handleContractDragOver;
+  window.handleContractDragLeave = handleContractDragLeave;
   window.handleContractDrop = handleContractDrop;
   
   console.log('✅ 계약현황 모듈 로드 완료 - 모든 함수가 window 객체에 바인딩됨');
