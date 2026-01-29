@@ -100,34 +100,34 @@ auth.put('/profile', requireAuth, async (c) => {
     const fields: string[] = [];
     const bindings: any[] = [];
 
-    // 이름 (한글)
+    // 이름 (한글) - 빈 문자열도 허용
     if (data.name !== undefined && data.name !== null) {
       fields.push('name = ?');
-      bindings.push(data.name);
+      bindings.push(data.name || '');
     }
 
-    // 닉네임 (영문)
+    // 닉네임 (영문) - 빈 문자열도 허용
     if (data.nickname !== undefined && data.nickname !== null) {
       fields.push('nickname = ?');
-      bindings.push(data.nickname);
+      bindings.push(data.nickname || '');
     }
 
-    // 연락처
+    // 연락처 - 빈 문자열도 허용
     if (data.phone !== undefined && data.phone !== null) {
       fields.push('phone = ?');
-      bindings.push(data.phone);
+      bindings.push(data.phone || '');
     }
 
-    // 부서명
+    // 부서명 - 빈 문자열도 허용
     if (data.department !== undefined && data.department !== null) {
       fields.push('department = ?');
-      bindings.push(data.department);
+      bindings.push(data.department || '');
     }
 
-    // 직책
+    // 직책 - 빈 문자열도 허용
     if (data.position !== undefined && data.position !== null) {
       fields.push('position = ?');
-      bindings.push(data.position);
+      bindings.push(data.position || '');
     }
 
     // 비밀번호 변경 (새 비밀번호와 확인이 일치하는 경우)

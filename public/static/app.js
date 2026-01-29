@@ -630,7 +630,7 @@ async function showProfileModal() {
                 <input
                   type="password"
                   id="profileNewPassword"
-                  value=""
+                  autocomplete="new-password"
                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                   placeholder="새 비밀번호 (선택)"
                 />
@@ -644,7 +644,7 @@ async function showProfileModal() {
                 <input
                   type="password"
                   id="profileConfirmPassword"
-                  value=""
+                  autocomplete="new-password"
                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                   placeholder="새 비밀번호 확인 (선택)"
                 />
@@ -708,6 +708,14 @@ async function updateProfile() {
     const newPassword = document.getElementById('profileNewPassword').value;
     const confirmPassword = document.getElementById('profileConfirmPassword').value;
 
+    console.log('=== 프로필 저장 데이터 ===');
+    console.log('name:', name);
+    console.log('nickname:', nickname);
+    console.log('phone:', phone);
+    console.log('department:', department);
+    console.log('position:', position);
+    console.log('newPassword:', newPassword ? '(입력됨)' : '(비어있음)');
+
     // 비밀번호 변경 시 확인
     if (newPassword || confirmPassword) {
       if (newPassword !== confirmPassword) {
@@ -724,13 +732,17 @@ async function updateProfile() {
       position
     };
 
-    // 비밀번호 변경 요청이 있는 경우
-    if (newPassword) {
+    // 비밀번호 변경 요청이 있는 경우만
+    if (newPassword && newPassword.trim() !== '') {
       data.newPassword = newPassword;
       data.confirmPassword = confirmPassword;
     }
 
+    console.log('전송할 데이터:', data);
+
     const response = await axios.put('/api/auth/profile', data);
+
+    console.log('API 응답:', response.data);
 
     if (response.data.success) {
       alert('프로필이 수정되었습니다.');
@@ -741,6 +753,7 @@ async function updateProfile() {
     }
   } catch (error) {
     console.error('프로필 수정 오류:', error);
+    console.error('오류 응답:', error.response?.data);
     alert(error.response?.data?.error || '프로필 수정 중 오류가 발생했습니다.');
   }
 }
