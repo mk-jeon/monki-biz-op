@@ -722,3 +722,17 @@ async function handleContractDrop(e) {
   
   return false;
 }
+
+// 전역 함수로 명시적 바인딩 (브라우저 호환성)
+window.loadContractPage = loadContractPage;
+window.loadContractList = loadContractList;
+window.loadContractKanban = loadContractKanban;
+window.toggleContractViewMode = toggleContractViewMode;
+window.showContractForm = showContractForm;
+window.submitContract = submitContract;
+window.updateContract = updateContract;
+window.deleteContract = deleteContract;
+window.showContractDetail = showContractDetail;
+window.closeContractDetailModal = closeContractDetailModal;
+
+console.log('✅ 계약현황 모듈 로드 완료 - 함수들이 window 객체에 바인딩됨');
