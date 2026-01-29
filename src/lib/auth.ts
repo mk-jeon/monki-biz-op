@@ -80,7 +80,7 @@ export async function getUserById(
   userId: number
 ): Promise<User | null> {
   const result = await db
-    .prepare('SELECT id, username, name, role, created_at FROM users WHERE id = ?')
+    .prepare('SELECT id, username, name, nickname, phone, department, position, role, created_at FROM users WHERE id = ?')
     .bind(userId)
     .first<User>();
 

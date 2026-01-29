@@ -6,6 +6,10 @@ export type User = {
   id: number;
   username: string;
   name: string;
+  nickname?: string;
+  phone?: string;
+  department?: string;
+  position?: string;
   role: 'master' | 'admin' | 'user';
   created_at: string;
 }
