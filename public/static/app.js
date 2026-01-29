@@ -443,8 +443,20 @@ async function loadDashboardData() {
         contractElement.textContent = contractCount;
       }
     } catch (error) {
-      // 계약현황 API 없을 경우 무시
       console.log('Contract API not available yet');
+    }
+    
+    // 설치현황 건수 조회 (미이관 건만 = 진행중)
+    try {
+      const installationResponse = await axios.get('/api/installations?page=1&limit=1');
+      const installationCount = installationResponse.data.pagination?.total || 0;
+      
+      const installationElement = document.getElementById('installationCount');
+      if (installationElement) {
+        installationElement.textContent = installationCount;
+      }
+    } catch (error) {
+      console.log('Installation API not available yet');
     }
   } catch (error) {
     console.error('Dashboard data load error:', error);

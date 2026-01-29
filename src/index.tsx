@@ -256,7 +256,9 @@ app.get('/', async (c) => {
                     <i class="fas fa-tools text-yellow-600 text-2xl"></i>
                   </div>
                 </div>
-                <p class="text-3xl font-bold text-gray-900 mb-2">0</p>
+                <p id="installationCount" class="text-3xl font-bold text-gray-900 mb-2">
+                  <i class="fas fa-spinner fa-spin text-gray-400"></i>
+                </p>
                 <p class="text-sm text-gray-600">진행중인 설치</p>
               </div>
 
