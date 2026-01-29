@@ -416,6 +416,20 @@ document.getElementById('logoutButton').addEventListener('click', async () => {
   }
 });
 
+// 우측 상단 로그아웃 버튼
+document.getElementById('headerLogoutButton').addEventListener('click', async () => {
+  if (!confirm('로그아웃하시겠습니까?')) {
+    return;
+  }
+
+  try {
+    await axios.post('/api/auth/logout');
+    window.location.href = '/';
+  } catch (error) {
+    alert('로그아웃 처리 중 오류가 발생했습니다.');
+  }
+});
+
 // 초기화
 renderMenu();
 

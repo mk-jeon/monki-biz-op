@@ -53,7 +53,7 @@ app.get('/', async (c) => {
               <i class="fas fa-briefcase text-white text-4xl"></i>
             </div>
             <h1 class="text-3xl font-bold text-gray-800">MONKi Biz Operation</h1>
-            <p class="text-gray-600 mt-2">사업운영본부 통합 업무 플랫폼</p>
+            <p class="text-gray-600 mt-2">디지털사업본부 통합 업무 플랫폼</p>
           </div>
 
           <form id="loginForm" class="space-y-6">
@@ -209,7 +209,7 @@ app.get('/', async (c) => {
               <h1 class="text-xl font-bold text-gray-800" id="pageTitle">대시보드</h1>
               <div class="flex items-center space-x-4">
                 <span class="text-sm text-gray-600">${user.name} (${user.role})</span>
-                <button id="logoutButton" class="text-red-600 hover:text-red-800 transition">
+                <button id="headerLogoutButton" class="text-red-600 hover:text-red-800 transition">
                   <i class="fas fa-sign-out-alt"></i> 로그아웃
                 </button>
               </div>
