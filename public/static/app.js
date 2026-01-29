@@ -351,8 +351,43 @@ function loadPage(page, addToHistory = true) {
     return;
   }
 
+  // 설치현황인 경우
+  if (page === 'installation') {
+    console.log('🔧 설치현황 페이지 로드');
+    mainContent.innerHTML = '<div class="flex items-center justify-center h-64"><i class="fas fa-spinner fa-spin text-4xl text-indigo-600"></i></div>';
+    
+    if (typeof window.loadInstallationPage === 'function') {
+      loadInstallationPage();
+    } else {
+      console.error('❌ loadInstallationPage 함수가 아직 로드되지 않았습니다.');
+      console.log('🔄 installation.js 로드 대기 중...');
+      
+      setTimeout(() => {
+        if (typeof window.loadInstallationPage === 'function') {
+          console.log('✅ installation.js 로드 완료, 함수 실행');
+          loadInstallationPage();
+        } else {
+          console.error('❌ installation.js 로드 실패');
+          mainContent.innerHTML = `
+            <div class="bg-white rounded-lg shadow-md p-8 text-center">
+              <div class="inline-block p-6 bg-red-100 rounded-full mb-4">
+                <i class="fas fa-exclamation-triangle text-red-600 text-5xl"></i>
+              </div>
+              <h2 class="text-2xl font-bold text-gray-800 mb-2">페이지 로드 오류</h2>
+              <p class="text-gray-600 mb-4">설치현황 페이지를 불러올 수 없습니다.</p>
+              <button onclick="window.location.reload()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-lg transition">
+                새로고침
+              </button>
+            </div>
+          `;
+        }
+      }, 500);
+    }
+    return;
+  }
+
   // 다른 페이지 (준비중)
-  console.log(`   🚧 준비중 페이지: ${page}`);
+  console.log(`🚧 준비중 페이지: ${page}`);
   mainContent.innerHTML = `
     <div class="bg-white rounded-lg shadow-md p-8 text-center">
       <div class="inline-block p-6 bg-gray-100 rounded-full mb-4">
