@@ -569,34 +569,27 @@ async function migrateToOperation(ids) {
   try {
     console.log('운영 이관 시작:', ids);
     
-    // TODO: 운영등재 API 구현 후 활성화
-    // const response = await axios.post('/api/operations/migrate', { installation_ids: ids });
-    // const { successCount, errorCount, errors } = response.data;
+    // 운영등재 API 호출
+    const response = await axios.post('/api/operations/migrate', { installation_ids: ids });
+    const { successCount, errorCount, errors } = response.data;
     
-    // 임시: 설치현황에서 이관 플래그만 업데이트
-    let successCount = 0;
-    let errorCount = 0;
-    const errors = [];
-    
+    // 설치현황에서 이관 플래그 업데이트
     for (const id of ids) {
       try {
         await axios.put(`/api/installations/${id}`, { 
-          status: 'completed',
           migrated_to_operation: 1,
           migrated_at: new Date().toISOString()
         });
-        successCount++;
       } catch (err) {
-        errorCount++;
-        errors.push(`ID ${id}: ${err.response?.data?.error || '알 수 없는 오류'}`);
+        console.error(`설치 ID ${id} 플래그 업데이트 실패:`, err);
       }
     }
     
-    let message = `이관 완료!\n\n`;
+    let message = `운영등재 이관 완료!\n\n`;
     message += `✅ 성공: ${successCount}건\n`;
     if (errorCount > 0) {
       message += `❌ 실패: ${errorCount}건\n`;
-      if (errors.length > 0) {
+      if (errors && errors.length > 0) {
         message += `\n실패 내역:\n${errors.join('\n')}`;
       }
     }
