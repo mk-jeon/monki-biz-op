@@ -179,24 +179,24 @@ async function loadInstallationList(page = 1) {
                 if (item.has_drive_upload) checklist.push('<i class="fas fa-cloud-upload-alt text-indigo-600" title="드라이브 업로드"></i>');
                 
                 return `
-                  <tr class="hover:bg-gray-50 cursor-pointer" onclick="showInstallationDetail(${item.id})">
-                    <td class="px-4 py-3 text-sm font-medium text-gray-900">${item.id}</td>
-                    <td class="px-4 py-3">
-                      <span class="${status.color} text-white text-xs px-2 py-1 rounded">${status.text}</span>
+                  <tr class="hover:bg-gray-50 cursor-pointer">
+                    <td class="px-4 py-3 text-sm font-medium text-gray-900" onclick="showInstallationDetail(${item.id})">${item.id}</td>
+                    <td class="px-4 py-3" onclick="event.stopPropagation(); showInstallationStatusModal(${item.id}, '${item.status}')">
+                      <span class="${status.color} text-white text-xs px-2 py-1 rounded cursor-pointer hover:opacity-80">${status.text}</span>
                     </td>
-                    <td class="px-4 py-3 text-sm text-gray-900">${item.customer_name || '-'}</td>
-                    <td class="px-4 py-3 text-sm text-gray-900">${item.phone}</td>
-                    <td class="px-4 py-3">
+                    <td class="px-4 py-3 text-sm text-gray-900" onclick="showInstallationDetail(${item.id})">${item.customer_name || '-'}</td>
+                    <td class="px-4 py-3 text-sm text-gray-900" onclick="showInstallationDetail(${item.id})">${item.phone}</td>
+                    <td class="px-4 py-3" onclick="showInstallationDetail(${item.id})">
                       <div class="flex flex-col space-y-1">
                         ${flags.join('')}
                       </div>
                     </td>
-                    <td class="px-4 py-3">
+                    <td class="px-4 py-3" onclick="showInstallationDetail(${item.id})">
                       <div class="flex space-x-2">
                         ${checklist.join(' ')}
                       </div>
                     </td>
-                    <td class="px-4 py-3 text-sm text-gray-600">${formatDate(item.created_at)}</td>
+                    <td class="px-4 py-3 text-sm text-gray-600" onclick="showInstallationDetail(${item.id})">${formatDate(item.created_at)}</td>
                     <td class="px-4 py-3 text-sm text-gray-600">${item.created_by_name}</td>
                     <td class="px-4 py-3 text-center">
                       <button onclick="event.stopPropagation(); showInstallationForm(${item.id})" class="text-blue-600 hover:text-blue-800 mr-2">
@@ -1207,6 +1207,81 @@ window.closeInstallationDetailModal = closeInstallationDetailModal;
 window.showInstallationForm = showInstallationForm;
 window.closeInstallationFormModal = closeInstallationFormModal;
 window.deleteInstallation = deleteInstallation;
+
+/**
+ * 설치현황 상태 변경 모달
+ */
+function showInstallationStatusModal(id, currentStatus) {
+  const statusOptions = [
+    { value: 'waiting', text: '설치대기', color: 'bg-gray-500' },
+    { value: 'in_progress', text: '설치 중', color: 'bg-blue-500' },
+    { value: 'hold', text: '설치보류', color: 'bg-yellow-500' },
+    { value: 'completed', text: '설치완료', color: 'bg-green-500' },
+    { value: 'cancelled', text: '설치취소', color: 'bg-red-500' }
+  ];
+
+  const modalHTML = `
+    <div id="statusChangeModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div class="bg-white rounded-lg p-8 max-w-md w-full mx-4">
+        <h3 class="text-2xl font-bold mb-6 text-gray-800">
+          <i class="fas fa-exchange-alt mr-2 text-purple-600"></i>
+          상태 변경
+        </h3>
+        
+        <div class="mb-6">
+          <label class="block text-sm font-semibold text-gray-700 mb-3">
+            새로운 상태 선택
+          </label>
+          <div class="space-y-2">
+            ${statusOptions.map(opt => `
+              <button 
+                onclick="changeInstallationStatus(${id}, '${opt.value}')"
+                class="${opt.color} hover:opacity-80 text-white px-4 py-3 rounded-lg transition w-full text-left ${currentStatus === opt.value ? 'ring-4 ring-blue-300' : ''}">
+                <i class="fas fa-check-circle mr-2"></i>
+                ${opt.text}
+                ${currentStatus === opt.value ? '<span class="float-right text-xs">(현재)</span>' : ''}
+              </button>
+            `).join('')}
+          </div>
+        </div>
+
+        <button onclick="closeStatusChangeModal()" class="w-full bg-gray-300 hover:bg-gray-400 text-gray-800 px-6 py-3 rounded-lg transition">
+          <i class="fas fa-times mr-2"></i>
+          취소
+        </button>
+      </div>
+    </div>
+  `;
+
+  document.body.insertAdjacentHTML('beforeend', modalHTML);
+}
+
+function closeStatusChangeModal() {
+  const modal = document.getElementById('statusChangeModal');
+  if (modal) modal.remove();
+}
+
+async function changeInstallationStatus(id, newStatus) {
+  try {
+    await axios.patch(`/api/installations/${id}/status`, { status: newStatus });
+    closeStatusChangeModal();
+    alert('상태가 변경되었습니다.');
+    
+    // 현재 뷰 모드에 따라 리로드
+    if (currentInstallationViewMode === 'list') {
+      loadInstallationList(currentInstallationPage);
+    } else {
+      loadInstallationKanban();
+    }
+  } catch (error) {
+    console.error('상태 변경 오류:', error);
+    alert(error.response?.data?.error || '상태 변경 중 오류가 발생했습니다.');
+  }
+}
+
+window.showInstallationStatusModal = showInstallationStatusModal;
+window.closeStatusChangeModal = closeStatusChangeModal;
+window.changeInstallationStatus = changeInstallationStatus;
 
 console.log('✅ 설치현황 상세보기 및 수정 기능 추가됨');
 
