@@ -280,8 +280,19 @@ function loadPage(page, addToHistory = true) {
 
   // 대시보드인 경우
   if (page === 'dashboard') {
-    console.log('   🏠 대시보드로 이동 (히스토리 유지하며 리로드)');
+    console.log('   🏠 대시보드로 이동');
     
+    // 현재 페이지가 이미 대시보드인지 확인
+    const currentPath = window.location.pathname;
+    if (currentPath === '/' || currentPath === '/dashboard') {
+      console.log('   ✅ 이미 대시보드 페이지입니다. 리로드하지 않습니다.');
+      // 대시보드 데이터만 새로고침
+      loadDashboardData();
+      return;
+    }
+    
+    // 다른 페이지에서 대시보드로 이동하는 경우에만 리다이렉트
+    console.log('   🔄 대시보드로 리다이렉트');
     // 히스토리를 localStorage에 저장
     try {
       localStorage.setItem('navigationHistory', JSON.stringify(history));
@@ -291,7 +302,6 @@ function loadPage(page, addToHistory = true) {
       console.error('히스토리 저장 실패:', error);
     }
     
-    // 대시보드는 서버에서 렌더링되므로 전체 리로드 필요
     window.location.href = '/';
     return;
   }
