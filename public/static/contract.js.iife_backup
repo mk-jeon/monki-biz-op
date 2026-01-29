@@ -2,6 +2,13 @@
 (function() {
   'use strict';
   
+  // 중복 로드 방지
+  if (window.__CONTRACT_MODULE_LOADED__) {
+    console.warn('⚠️ contract.js가 이미 로드되어 있습니다. 중복 로드 방지.');
+    return;
+  }
+  window.__CONTRACT_MODULE_LOADED__ = true;
+  
   console.log('🔵 contract.js 모듈 로드 시작 (IIFE 스코프)');
 
 
