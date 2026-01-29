@@ -5,6 +5,7 @@ import type { Bindings, Variables } from './types';
 import { authMiddleware } from './middleware/auth';
 import authRoutes from './routes/auth';
 import noticeRoutes from './routes/notices';
+import consultationRoutes from './routes/consultations';
 
 const app = new Hono<{ Bindings: Bindings; Variables: Variables }>();
 
@@ -17,6 +18,7 @@ app.use('*', authMiddleware);
 // API 라우트
 app.route('/api/auth', authRoutes);
 app.route('/api/notices', noticeRoutes);
+app.route('/api/consultations', consultationRoutes);
 
 // 정적 파일 제공
 app.use('/static/*', serveStatic({ root: './public' }));
@@ -286,6 +288,7 @@ app.get('/', async (c) => {
         const currentUser = ${JSON.stringify({ id: user.id, username: user.username, name: user.name, role: user.role })};
       </script>
       <script src="/static/notice.js"></script>
+      <script src="/static/consultation.js"></script>
       <script src="/static/app.js"></script>
     </body>
     </html>
