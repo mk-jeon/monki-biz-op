@@ -34,7 +34,7 @@ consultations.get('/', requireAuth, async (c) => {
     } else {
       // 일반 모드: 진행중인 건 표시 (이관 전까지 모두 표시)
       // 이관된 건만 제외
-      whereClause = 'WHERE c.migrated_to_contract = 0';
+      whereClause = 'WHERE (c.migrated_to_contract = 0 OR c.migrated_to_contract IS NULL)';
       
       // 통계용 조회 시 이관 건 포함
       if (showAll) {

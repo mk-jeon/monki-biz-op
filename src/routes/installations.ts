@@ -32,7 +32,7 @@ installations.get('/', requireAuth, async (c) => {
       }
     } else {
       // 일반 모드: 미이관 건만
-      whereClause = 'WHERE i.migrated_to_operation = 0';
+      whereClause = 'WHERE (i.migrated_to_operation = 0 OR i.migrated_to_operation IS NULL)';
       
       if (showAll) {
         whereClause = 'WHERE 1=1';

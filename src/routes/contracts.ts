@@ -35,7 +35,7 @@ contracts.get('/', requireAuth, async (c) => {
       // 일반 모드: 미이관 건만 표시
       // 계약완료 건도 표시하되, 이관 후에만 숨김
       // 취소 건은 최근 5건만 포함
-      whereClause = 'WHERE c.migrated_to_installation = 0';
+      whereClause = 'WHERE (c.migrated_to_installation = 0 OR c.migrated_to_installation IS NULL)';
       
       // 통계용 조회 시 이관 건 포함
       if (showAll) {
