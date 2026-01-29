@@ -1,5 +1,33 @@
 // 계약현황 관련 함수
 
+/**
+ * 날짜 포맷 함수 (notice.js와 동일)
+ */
+function formatDate(dateString) {
+  // UTC 시간을 한국 시간(UTC+9)으로 변환
+  const utcDate = new Date(dateString);
+  const kstDate = new Date(utcDate.getTime() + (9 * 60 * 60 * 1000));
+  const now = new Date();
+  const diff = now - kstDate;
+  const diffHours = Math.floor(diff / (1000 * 60 * 60));
+  const diffDays = Math.floor(diff / (1000 * 60 * 60 * 24));
+
+  if (diffHours < 1) {
+    return '방금 전';
+  } else if (diffHours < 24) {
+    return `${diffHours}시간 전`;
+  } else if (diffDays < 7) {
+    return `${diffDays}일 전`;
+  } else {
+    return kstDate.toLocaleDateString('ko-KR', { 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric',
+      timeZone: 'Asia/Seoul'
+    });
+  }
+}
+
 let currentContractPage = 1;
 let currentContractViewMode = 'list'; // 'list' or 'kanban'
 let inflowSources = []; // 유입경로 목록 (상담에서 가져옴)

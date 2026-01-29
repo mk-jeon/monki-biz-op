@@ -184,6 +184,22 @@ dashboardCards.forEach((card, index) => {
 let history = ['dashboard'];
 let historyIndex = 0;
 
+// localStorage에서 히스토리 복구 (페이지 reload 후에도 유지)
+try {
+  const savedHistory = localStorage.getItem('navigationHistory');
+  const savedIndex = localStorage.getItem('navigationIndex');
+  if (savedHistory && savedIndex) {
+    history = JSON.parse(savedHistory);
+    historyIndex = parseInt(savedIndex);
+    console.log('📚 히스토리 복구됨:', history, 'index:', historyIndex);
+    // 복구 후 localStorage 클리어
+    localStorage.removeItem('navigationHistory');
+    localStorage.removeItem('navigationIndex');
+  }
+} catch (error) {
+  console.error('히스토리 복구 실패:', error);
+}
+
 console.log('🧭 네비게이션 버튼 초기화');
 
 document.getElementById('homeButton').addEventListener('click', () => {
@@ -264,18 +280,19 @@ function loadPage(page, addToHistory = true) {
 
   // 대시보드인 경우
   if (page === 'dashboard') {
-    console.log('   🏠 대시보드로 이동 (SPA 방식으로 리로드)');
-    // SPA 방식: 페이지 새로고침 대신 대시보드 데이터만 다시 로드
-    mainContent.innerHTML = `
-      <div class="text-center py-12">
-        <i class="fas fa-spinner fa-spin text-4xl text-indigo-600 mb-4"></i>
-        <p class="text-gray-600">대시보드를 로드하는 중...</p>
-      </div>
-    `;
-    // 실제로는 전체 페이지 리로드가 필요하므로 히스토리만 초기화하고 리로드
-    setTimeout(() => {
-      window.location.reload();
-    }, 100);
+    console.log('   🏠 대시보드로 이동 (히스토리 유지하며 리로드)');
+    
+    // 히스토리를 localStorage에 저장
+    try {
+      localStorage.setItem('navigationHistory', JSON.stringify(history));
+      localStorage.setItem('navigationIndex', historyIndex.toString());
+      console.log('   💾 히스토리 저장됨:', history, 'index:', historyIndex);
+    } catch (error) {
+      console.error('히스토리 저장 실패:', error);
+    }
+    
+    // 대시보드는 서버에서 렌더링되므로 전체 리로드 필요
+    window.location.href = '/';
     return;
   }
 
