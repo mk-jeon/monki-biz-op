@@ -3,8 +3,13 @@
 let currentConsultationPage = 1;
 let currentViewMode = 'list'; // 'list' or 'kanban'
 let inflowSources = []; // 유입경로 목록
-let consultationSortField = null; // 정렬 필드
-let consultationSortOrder = 0; // 0: 기본, 1: 오름차순, 2: 내림차순
+
+/**
+ * 상담 정렬 처리 함수
+ */
+function handleSort_consultation(field) {
+  window.handleSort(field, 'consultation', () => loadConsultationList(currentConsultationPage));
+}
 
 /**
  * 상담현황 페이지 로드
@@ -48,7 +53,11 @@ function toggleViewMode() {
 async function loadConsultationList(page = 1) {
   try {
     const response = await axios.get(`/api/consultations?page=${page}&limit=50`);
-    const { consultations, pagination } = response.data;
+    let { consultations, pagination } = response.data;
+    
+    // 정렬 적용
+    const sortState = window.sortStates.consultation;
+    consultations = window.sortData(consultations, sortState.field, sortState.order, 'consultation');
 
     const statusMap = {
       'waiting': { text: '상담대기', color: 'bg-gray-500' },
@@ -101,14 +110,49 @@ async function loadConsultationList(page = 1) {
           <table class="w-full">
             <thead class="bg-gray-50 border-b-2 border-gray-200">
               <tr>
-                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">ID</th>
-                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">상태</th>
-                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">고객명</th>
-                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">전화번호</th>
-                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">유입경로</th>
+                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase cursor-pointer hover:bg-gray-100 transition" onclick="handleSort_consultation('id')">
+                  <div class="flex items-center">
+                    ID
+                    ${window.getSortIcon('id', sortState.field, sortState.order)}
+                  </div>
+                </th>
+                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase cursor-pointer hover:bg-gray-100 transition" onclick="handleSort_consultation('status')">
+                  <div class="flex items-center">
+                    상태
+                    ${window.getSortIcon('status', sortState.field, sortState.order)}
+                  </div>
+                </th>
+                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase cursor-pointer hover:bg-gray-100 transition" onclick="handleSort_consultation('customer_name')">
+                  <div class="flex items-center">
+                    고객명
+                    ${window.getSortIcon('customer_name', sortState.field, sortState.order)}
+                  </div>
+                </th>
+                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase cursor-pointer hover:bg-gray-100 transition" onclick="handleSort_consultation('phone')">
+                  <div class="flex items-center">
+                    전화번호
+                    ${window.getSortIcon('phone', sortState.field, sortState.order)}
+                  </div>
+                </th>
+                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase cursor-pointer hover:bg-gray-100 transition" onclick="handleSort_consultation('inflow_source')">
+                  <div class="flex items-center">
+                    유입경로
+                    ${window.getSortIcon('inflow_source', sortState.field, sortState.order)}
+                  </div>
+                </th>
                 <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">옵션</th>
-                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">등록일</th>
-                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">등록자</th>
+                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase cursor-pointer hover:bg-gray-100 transition" onclick="handleSort_consultation('created_at')">
+                  <div class="flex items-center">
+                    등록일
+                    ${window.getSortIcon('created_at', sortState.field, sortState.order)}
+                  </div>
+                </th>
+                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase cursor-pointer hover:bg-gray-100 transition" onclick="handleSort_consultation('created_by_name')">
+                  <div class="flex items-center">
+                    등록자
+                    ${window.getSortIcon('created_by_name', sortState.field, sortState.order)}
+                  </div>
+                </th>
                 <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">수정자</th>
                 <th class="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase">관리</th>
               </tr>
@@ -1165,3 +1209,8 @@ async function loadArchiveData(type) {
     `;
   }
 }
+
+// Window 객체에 함수 바인딩
+window.loadConsultationPage = loadConsultationPage;
+window.loadConsultationList = loadConsultationList;
+window.handleSort_consultation = handleSort_consultation;

@@ -37,6 +37,13 @@ let currentContractPage = 1;
 let currentContractViewMode = 'list'; // 'list' or 'kanban'
 let inflowSources = []; // 유입경로 목록 (상담에서 가져옴)
 
+/**
+ * 계약 정렬 처리 함수
+ */
+function handleSort_contract(field) {
+  window.handleSort(field, 'contract', () => loadContractList(currentContractPage));
+}
+
 console.log('🔵 contract.js 시작 - 파일 로딩 중...');
 
 /**
@@ -90,7 +97,11 @@ async function loadContractList(page = 1) {
     console.log(`📡 API 호출 시작: /api/contracts?page=${page}&limit=50`);
     const response = await axios.get(`/api/contracts?page=${page}&limit=50`);
     console.log('✅ API 응답 받음:', response.data);
-    const { contracts, pagination } = response.data;
+    let { contracts, pagination } = response.data;
+    
+    // 정렬 적용
+    const sortState = window.sortStates.contract;
+    contracts = window.sortData(contracts, sortState.field, sortState.order, 'contract');
 
     const statusMap = {
       'waiting': { text: '계약대기', color: 'bg-gray-500' },
@@ -136,14 +147,14 @@ async function loadContractList(page = 1) {
           <table class="w-full">
             <thead class="bg-gray-50 border-b-2 border-gray-200">
               <tr>
-                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">ID</th>
-                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">상태</th>
-                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">고객명</th>
-                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">전화번호</th>
-                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">유입경로</th>
+                ${createSortableHeader('id', 'ID', 'contract', 'px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase')}
+                ${createSortableHeader('status', '상태', 'contract', 'px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase')}
+                ${createSortableHeader('customer_name', '고객명', 'contract', 'px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase')}
+                ${createSortableHeader('phone', '전화번호', 'contract', 'px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase')}
+                ${createSortableHeader('inflow_source', '유입경로', 'contract', 'px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase')}
                 <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">옵션</th>
-                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">등록일</th>
-                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">등록자</th>
+                ${createSortableHeader('created_at', '등록일', 'contract', 'px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase')}
+                ${createSortableHeader('created_by_name', '등록자', 'contract', 'px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase')}
                 <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">수정자</th>
                 <th class="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase">관리</th>
               </tr>
@@ -1079,3 +1090,7 @@ async function migrateToInstallation(ids) {
   }
 }
 
+// Window 바인딩
+window.loadContractPage = loadContractPage;
+window.loadContractList = loadContractList;
+window.handleSort_contract = handleSort;
