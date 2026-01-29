@@ -157,28 +157,28 @@ app.get('/', async (c) => {
     <body class="bg-gray-50">
       <div class="flex h-screen overflow-hidden">
         <!-- 좌측 사이드바 -->
-        <aside id="sidebar" class="sidebar bg-indigo-900 text-white flex flex-col shadow-xl">
+        <aside id="sidebar" class="sidebar bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 text-white flex flex-col shadow-2xl">
           <!-- 상단 헤더 -->
-          <div class="p-4 border-b border-indigo-800 flex items-center justify-between">
+          <div class="p-4 border-b border-slate-700 flex items-center justify-between backdrop-blur-sm">
             <div class="flex items-center space-x-3">
-              <div class="bg-indigo-700 p-2 rounded-lg">
+              <div class="bg-gradient-to-br from-indigo-500 to-purple-600 p-2 rounded-xl shadow-lg">
                 <i class="fas fa-briefcase text-xl"></i>
               </div>
-              <span class="menu-text font-bold text-lg">MONKi Biz OP</span>
+              <span class="menu-text font-bold text-lg bg-gradient-to-r from-white to-indigo-200 bg-clip-text text-transparent">MONKi Biz OP</span>
             </div>
-            <button id="toggleSidebar" class="hover:bg-indigo-800 p-2 rounded-lg transition">
+            <button id="toggleSidebar" class="hover:bg-slate-700 p-2 rounded-lg transition duration-200">
               <i class="fas fa-bars"></i>
             </button>
           </div>
 
           <!-- 사용자 정보 -->
-          <div class="p-4 border-b border-indigo-800 bg-indigo-800">
+          <div class="p-4 border-b border-slate-700 bg-gradient-to-r from-slate-800 to-slate-700">
             <div class="flex items-center space-x-3">
-              <div class="bg-indigo-600 p-3 rounded-full">
+              <div class="bg-gradient-to-br from-indigo-500 to-purple-600 p-3 rounded-full shadow-lg ring-2 ring-indigo-400 ring-opacity-50">
                 <i class="fas fa-user"></i>
               </div>
               <div class="menu-text">
-                <p class="font-semibold" id="userName">${user.name}</p>
+                <p class="font-semibold text-white" id="userName">${user.name}</p>
                 <p class="text-xs text-indigo-300" id="userRole">${user.role === 'master' ? '마스터' : user.role === 'admin' ? '관리자' : '사용자'}</p>
               </div>
             </div>
@@ -190,10 +190,10 @@ app.get('/', async (c) => {
           </nav>
 
           <!-- 로그아웃 -->
-          <div class="p-4 border-t border-indigo-800">
+          <div class="p-4 border-t border-slate-700">
             <button
               id="logoutButton"
-              class="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-3 px-4 rounded-lg transition duration-200 flex items-center justify-center"
+              class="w-full bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-semibold py-3 px-4 rounded-lg transition duration-200 flex items-center justify-center shadow-lg hover:shadow-xl"
             >
               <i class="fas fa-sign-out-alt mr-2"></i>
               <span class="menu-text">로그아웃</span>

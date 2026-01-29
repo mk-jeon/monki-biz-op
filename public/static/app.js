@@ -112,7 +112,7 @@ function renderMenu() {
     // 구분선 처리
     if (item.divider) {
       const divider = document.createElement('div');
-      divider.className = 'my-3 border-t border-indigo-800';
+      divider.className = 'my-3 border-t border-slate-700';
       mainMenu.appendChild(divider);
       return;
     }
@@ -128,17 +128,17 @@ function renderMenu() {
       // 서브메뉴가 있는 경우
       menuItem.className = 'menu-item';
       menuItem.innerHTML = `
-        <button class="w-full flex items-center justify-between p-3 hover:bg-indigo-800 rounded-lg transition submenu-toggle" data-target="${item.id}-submenu">
+        <button class="w-full flex items-center justify-between p-3 hover:bg-slate-700 hover:bg-opacity-50 rounded-lg transition duration-200 submenu-toggle" data-target="${item.id}-submenu">
           <div class="flex items-center space-x-3">
-            <i class="fas ${item.icon}"></i>
+            <i class="fas ${item.icon} text-indigo-400"></i>
             <span class="menu-text">${item.label}</span>
           </div>
           <i class="fas fa-chevron-down menu-text transition-transform submenu-icon"></i>
         </button>
         <div id="${item.id}-submenu" class="submenu ml-4 space-y-1 mt-1">
           ${item.submenu.map(sub => `
-            <a href="#${sub.page}" class="block p-2 hover:bg-indigo-800 rounded-lg transition menu-link" data-page="${sub.page}">
-              <span class="menu-text text-sm">${sub.label}</span>
+            <a href="#${sub.page}" class="block p-2 hover:bg-slate-700 hover:bg-opacity-50 rounded-lg transition duration-200 menu-link" data-page="${sub.page}">
+              <span class="menu-text text-sm text-slate-300 hover:text-white">${sub.label}</span>
             </a>
           `).join('')}
         </div>
@@ -146,8 +146,8 @@ function renderMenu() {
     } else {
       // 일반 메뉴
       menuItem.innerHTML = `
-        <a href="#${item.page}" class="flex items-center space-x-3 p-3 hover:bg-indigo-800 rounded-lg transition menu-link" data-page="${item.page}">
-          <i class="fas ${item.icon}"></i>
+        <a href="#${item.page}" class="flex items-center space-x-3 p-3 hover:bg-slate-700 hover:bg-opacity-50 rounded-lg transition duration-200 menu-link" data-page="${item.page}">
+          <i class="fas ${item.icon} text-indigo-400"></i>
           <span class="menu-text">${item.label}</span>
         </a>
       `;
