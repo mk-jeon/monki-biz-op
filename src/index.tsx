@@ -205,12 +205,6 @@ app.get('/', async (c) => {
           <header class="bg-white shadow-sm p-4 sticky top-0 z-10">
             <div class="flex items-center justify-between">
               <div class="flex items-center space-x-4">
-                <button id="backButton" class="p-2 hover:bg-gray-100 rounded-lg transition" title="뒤로">
-                  <i class="fas fa-arrow-left text-gray-600"></i>
-                </button>
-                <button id="forwardButton" class="p-2 hover:bg-gray-100 rounded-lg transition" title="앞으로">
-                  <i class="fas fa-arrow-right text-gray-600"></i>
-                </button>
                 <button id="homeButton" class="p-2 hover:bg-gray-100 rounded-lg transition" title="홈">
                   <i class="fas fa-home text-gray-600"></i>
                 </button>

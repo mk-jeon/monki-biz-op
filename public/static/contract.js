@@ -777,6 +777,12 @@ async function handleContractDrop(e) {
   window.showContractDetail = showContractDetail;
   window.closeContractDetailModal = closeContractDetailModal;
   
+  // 드래그앤드롭 핸들러 함수들
+  window.handleContractDragStart = handleContractDragStart;
+  window.handleContractDragEnd = handleContractDragEnd;
+  window.handleContractDragOver = handleContractDragOver;
+  window.handleContractDrop = handleContractDrop;
+  
   console.log('✅ 계약현황 모듈 로드 완료 - 모든 함수가 window 객체에 바인딩됨');
   
 })(); // IIFE 즉시 실행

@@ -207,28 +207,6 @@ document.getElementById('homeButton').addEventListener('click', () => {
   loadPage('dashboard');
 });
 
-document.getElementById('backButton').addEventListener('click', () => {
-  console.log(`⬅️ 뒤로 버튼 클릭 (historyIndex: ${historyIndex}, history: ${JSON.stringify(history)})`);
-  if (historyIndex > 0) {
-    historyIndex--;
-    console.log(`   → 이동: ${history[historyIndex]}`);
-    loadPage(history[historyIndex], false);
-  } else {
-    console.log('   → 더 이상 뒤로 갈 수 없음');
-  }
-});
-
-document.getElementById('forwardButton').addEventListener('click', () => {
-  console.log(`➡️ 앞으로 버튼 클릭 (historyIndex: ${historyIndex}, history: ${JSON.stringify(history)})`);
-  if (historyIndex < history.length - 1) {
-    historyIndex++;
-    console.log(`   → 이동: ${history[historyIndex]}`);
-    loadPage(history[historyIndex], false);
-  } else {
-    console.log('   → 더 이상 앞으로 갈 수 없음');
-  }
-});
-
 // 페이지 로드
 function loadPage(page, addToHistory = true) {
   console.log(`📄 loadPage 호출: page="${page}", addToHistory=${addToHistory}`);
