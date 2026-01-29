@@ -8,6 +8,14 @@ const menuItems = [
     roles: ['master', 'admin', 'user']
   },
   {
+    id: 'dashboard',
+    icon: 'fa-chart-line',
+    label: '업무 대시보드',
+    page: 'dashboard',
+    roles: ['master', 'admin', 'user']
+  },
+  { divider: true },
+  {
     id: 'consulting',
     icon: 'fa-comments',
     label: '상담현황',
@@ -42,6 +50,7 @@ const menuItems = [
     page: 'franchise',
     roles: ['master', 'admin', 'user']
   },
+  { divider: true },
   {
     id: 'settlement',
     icon: 'fa-calculator',
@@ -78,6 +87,7 @@ const menuItems = [
     ],
     roles: ['master', 'admin', 'user']
   },
+  { divider: true },
   {
     id: 'admin',
     icon: 'fa-shield-alt',
@@ -99,6 +109,14 @@ function renderMenu() {
   mainMenu.innerHTML = '';
 
   menuItems.forEach(item => {
+    // 구분선 처리
+    if (item.divider) {
+      const divider = document.createElement('div');
+      divider.className = 'my-3 border-t border-indigo-800';
+      mainMenu.appendChild(divider);
+      return;
+    }
+    
     // 권한 체크
     if (!item.roles.includes(currentUser.role)) {
       return;
@@ -201,11 +219,6 @@ try {
 }
 
 console.log('🧭 네비게이션 버튼 초기화');
-
-document.getElementById('homeButton').addEventListener('click', () => {
-  console.log('🏠 홈 버튼 클릭');
-  loadPage('dashboard');
-});
 
 // 페이지 로드
 function loadPage(page, addToHistory = true) {

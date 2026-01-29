@@ -204,12 +204,13 @@ app.get('/', async (c) => {
           <!-- 상단 바 -->
           <header class="bg-white shadow-sm p-4 sticky top-0 z-10">
             <div class="flex items-center justify-between">
+              <h1 class="text-xl font-bold text-gray-800" id="pageTitle">대시보드</h1>
               <div class="flex items-center space-x-4">
-                <button id="homeButton" class="p-2 hover:bg-gray-100 rounded-lg transition" title="홈">
-                  <i class="fas fa-home text-gray-600"></i>
+                <span class="text-sm text-gray-600">${user.name} (${user.role})</span>
+                <button id="logoutButton" class="text-red-600 hover:text-red-800 transition">
+                  <i class="fas fa-sign-out-alt"></i> 로그아웃
                 </button>
               </div>
-              <h1 class="text-xl font-bold text-gray-800" id="pageTitle">대시보드</h1>
             </div>
           </header>
 
