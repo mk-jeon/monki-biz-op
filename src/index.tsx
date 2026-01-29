@@ -7,6 +7,7 @@ import authRoutes from './routes/auth';
 import noticeRoutes from './routes/notices';
 import consultationRoutes from './routes/consultations';
 import contractRoutes from './routes/contracts';
+import installationRoutes from './routes/installations';
 
 // 빌드 시점의 버전 (캐시 무효화용)
 const BUILD_VERSION = Date.now();
@@ -24,6 +25,7 @@ app.route('/api/auth', authRoutes);
 app.route('/api/notices', noticeRoutes);
 app.route('/api/consultations', consultationRoutes);
 app.route('/api/contracts', contractRoutes);
+app.route('/api/installations', installationRoutes);
 
 // 정적 파일 제공
 app.use('/static/*', serveStatic({ root: './public' }));

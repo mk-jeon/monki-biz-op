@@ -1049,25 +1049,21 @@ async function migrateToInstallation(ids) {
   try {
     console.log('🚀 설치이관 실행 시작...', ids);
     
-    // TODO: 설치현황 API가 구현되면 활성화
-    // const response = await axios.post('/api/installations/migrate', {
-    //   contract_ids: ids
-    // });
+    const response = await axios.post('/api/installations/migrate', {
+      contract_ids: ids
+    });
 
-    // const { successCount, errorCount, errors } = response.data;
+    const { successCount, errorCount, errors } = response.data;
 
-    // let message = `이관 완료!\n성공: ${successCount}건`;
-    // if (errorCount > 0) {
-    //   message += `\n실패: ${errorCount}건`;
-    //   if (errors && errors.length > 0) {
-    //     message += '\n\n에러:\n' + errors.join('\n');
-    //   }
-    // }
+    let message = `이관 완료!\n성공: ${successCount}건`;
+    if (errorCount > 0) {
+      message += `\n실패: ${errorCount}건`;
+      if (errors && errors.length > 0) {
+        message += '\n\n에러:\n' + errors.join('\n');
+      }
+    }
 
-    // alert(message);
-    
-    // 임시: 설치현황 API 미구현 상태
-    alert(`설치현황 기능은 준비 중입니다.\n계약완료 건 ${ids.length}건이 이관 대기 중입니다.`);
+    alert(message);
     
     closeMigrateToInstallationModal();
     

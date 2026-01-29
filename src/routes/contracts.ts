@@ -32,17 +32,14 @@ contracts.get('/', requireAuth, async (c) => {
         bindings.push(status);
       }
     } else {
-      // 일반 모드: 진행중인 건만 표시
-      // 1) 계약완료 건 제외
-      // 2) 취소 건은 최근 5건만 포함
-      whereClause = 'WHERE c.migrated_to_installation = 0 AND c.status != ?';
-      bindings.push('completed');
+      // 일반 모드: 미이관 건만 표시
+      // 계약완료 건도 표시하되, 이관 후에만 숨김
+      // 취소 건은 최근 5건만 포함
+      whereClause = 'WHERE c.migrated_to_installation = 0';
       
       // 통계용 조회 시 이관 건 포함
       if (showAll) {
-        whereClause = 'WHERE c.status != ?';
-        bindings.length = 0;
-        bindings.push('completed');
+        whereClause = 'WHERE 1=1';
       }
       
       // 특정 상태 필터링
@@ -337,7 +334,9 @@ contracts.put('/:id/status', requireAuth, async (c) => {
 
 /**
  * GET /api/contracts/stats/completed
- * 계약완료 건수 및 ID 목록 조회 (설치이관용)
+ * 계약완료 및 선설치 건수 조회 (설치이관용)
+ * - 계약완료(status='completed') 건
+ * - 선설치(pre_installation=1) 건
  */
 contracts.get('/stats/completed', requireAuth, async (c) => {
   try {
@@ -347,8 +346,11 @@ contracts.get('/stats/completed', requireAuth, async (c) => {
           COUNT(*) as count,
           GROUP_CONCAT(id) as ids
         FROM contracts
-        WHERE status = 'completed' 
-          AND (migrated_to_installation = 0 OR migrated_to_installation IS NULL)
+        WHERE (
+          status = 'completed' 
+          OR pre_installation = 1
+        )
+        AND (migrated_to_installation = 0 OR migrated_to_installation IS NULL)
       `)
       .first<{ count: number; ids: string }>();
 
