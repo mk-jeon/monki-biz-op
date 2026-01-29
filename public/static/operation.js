@@ -3,8 +3,11 @@
  */
 
 async function loadOperationPage() {
-  const content = document.getElementById('content');
-  if (!content) return;
+  const content = document.getElementById('mainContent');
+  if (!content) {
+    console.error('mainContent 요소를 찾을 수 없습니다.');
+    return;
+  }
 
   content.innerHTML = `
     <div class="max-w-4xl mx-auto">
