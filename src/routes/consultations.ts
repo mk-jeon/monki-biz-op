@@ -310,4 +310,30 @@ consultations.get('/categories/:type', requireAuth, async (c) => {
   }
 });
 
+/**
+ * GET /api/consultations/stats/completed
+ * 계약확정 상태 건수 조회
+ */
+consultations.get('/stats/completed', requireAuth, async (c) => {
+  try {
+    const result = await c.env.DB
+      .prepare(`
+        SELECT 
+          COUNT(*) as count,
+          GROUP_CONCAT(id) as ids
+        FROM consultations 
+        WHERE status = 'completed'
+      `)
+      .first<{ count: number; ids: string }>();
+
+    const count = result?.count || 0;
+    const ids = result?.ids ? result.ids.split(',').map(id => parseInt(id)) : [];
+
+    return c.json({ count, ids });
+  } catch (error) {
+    console.error('Get completed stats error:', error);
+    return c.json({ error: '통계를 불러올 수 없습니다.' }, 500);
+  }
+});
+
 export default consultations;

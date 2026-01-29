@@ -6,6 +6,7 @@ import { authMiddleware } from './middleware/auth';
 import authRoutes from './routes/auth';
 import noticeRoutes from './routes/notices';
 import consultationRoutes from './routes/consultations';
+import contractRoutes from './routes/contracts';
 
 const app = new Hono<{ Bindings: Bindings; Variables: Variables }>();
 
@@ -19,6 +20,7 @@ app.use('*', authMiddleware);
 app.route('/api/auth', authRoutes);
 app.route('/api/notices', noticeRoutes);
 app.route('/api/consultations', consultationRoutes);
+app.route('/api/contracts', contractRoutes);
 
 // 정적 파일 제공
 app.use('/static/*', serveStatic({ root: './public' }));

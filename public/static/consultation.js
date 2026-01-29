@@ -66,6 +66,10 @@ async function loadConsultationList(page = 1) {
               상담현황
             </h2>
             <div class="flex space-x-2">
+              <button onclick="showMigrateToContractModal()" class="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg transition flex items-center">
+                <i class="fas fa-arrow-right mr-2"></i>
+                계약 이관
+              </button>
               <button onclick="toggleViewMode()" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg transition flex items-center">
                 <i class="fas fa-${currentViewMode === 'list' ? 'th-large' : 'list'} mr-2"></i>
                 ${currentViewMode === 'list' ? '칸반 보기' : '리스트 보기'}
@@ -883,4 +887,106 @@ async function handleDrop(e) {
   }
   
   return false;
+}
+
+/**
+ * 계약 이관 모달 표시
+ */
+async function showMigrateToContractModal() {
+  try {
+    // 계약확정 상태 건수 조회
+    const response = await axios.get('/api/consultations/stats/completed');
+    const { count, ids } = response.data;
+
+    if (count === 0) {
+      alert('계약확정 상태인 상담이 없습니다.');
+      return;
+    }
+
+    const modal = `
+      <div id="migrateModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onclick="if(event.target.id === 'migrateModal') closeMigrateModal()">
+        <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-md" onclick="event.stopPropagation()">
+          <h3 class="text-xl font-bold text-gray-800 mb-4">
+            <i class="fas fa-arrow-right mr-2 text-orange-600"></i>
+            계약현황으로 이관
+          </h3>
+          
+          <div class="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <p class="text-lg font-semibold text-blue-800 mb-2">
+              <i class="fas fa-check-circle mr-2"></i>
+              계약확정 상태: <span class="text-2xl">${count}</span>건
+            </p>
+            <p class="text-sm text-blue-600">
+              해당 상담 건들을 계약현황 페이지로 이관하시겠습니까?
+            </p>
+          </div>
+
+          <div class="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded">
+            <p class="text-xs text-yellow-800">
+              <i class="fas fa-exclamation-triangle mr-1"></i>
+              <strong>참고:</strong> 이관 후에도 상담현황 데이터는 유지됩니다.
+            </p>
+          </div>
+
+          <div class="flex space-x-3">
+            <button onclick="migrateToContract(${JSON.stringify(ids)})" class="flex-1 bg-orange-600 hover:bg-orange-700 text-white font-semibold py-3 px-4 rounded-lg transition">
+              <i class="fas fa-check mr-2"></i>
+              이관 확정 (${count}건)
+            </button>
+            <button onclick="closeMigrateModal()" class="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold py-3 px-4 rounded-lg transition">
+              <i class="fas fa-times mr-2"></i>
+              취소
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    document.body.insertAdjacentHTML('beforeend', modal);
+  } catch (error) {
+    console.error('Show migrate modal error:', error);
+    alert('이관 정보를 불러올 수 없습니다.');
+  }
+}
+
+/**
+ * 계약 이관 모달 닫기
+ */
+function closeMigrateModal() {
+  const modal = document.getElementById('migrateModal');
+  if (modal) modal.remove();
+}
+
+/**
+ * 계약현황으로 이관 실행
+ */
+async function migrateToContract(ids) {
+  try {
+    const response = await axios.post('/api/contracts/migrate', {
+      consultation_ids: ids
+    });
+
+    const { successCount, errorCount, errors } = response.data;
+
+    let message = `이관 완료!\n성공: ${successCount}건`;
+    if (errorCount > 0) {
+      message += `\n실패: ${errorCount}건`;
+      if (errors && errors.length > 0) {
+        message += '\n\n에러:\n' + errors.join('\n');
+      }
+    }
+
+    alert(message);
+    closeMigrateModal();
+    
+    // 리스트 새로고침
+    if (currentViewMode === 'list') {
+      loadConsultationList(currentConsultationPage);
+    } else {
+      loadConsultationKanban();
+    }
+  } catch (error) {
+    console.error('Migrate error:', error);
+    alert(error.response?.data?.error || '이관 중 오류가 발생했습니다.');
+  }
 }
