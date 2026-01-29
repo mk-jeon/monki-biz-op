@@ -695,6 +695,10 @@ async function loadConsultationKanban() {
               상담현황 - 칸반 보드
             </h2>
             <div class="flex space-x-2">
+              <button onclick="showMigrateToContractModal()" class="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg transition flex items-center">
+                <i class="fas fa-arrow-right mr-2"></i>
+                계약 이관
+              </button>
               <button onclick="toggleViewMode()" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg transition flex items-center">
                 <i class="fas fa-list mr-2"></i>
                 리스트 보기

@@ -318,7 +318,7 @@ consultations.get('/categories/:type', requireAuth, async (c) => {
 
 /**
  * GET /api/consultations/stats/completed
- * 계약확정 상태 건수 조회
+ * 계약확정 상태 건수 조회 (미이관 건만)
  */
 consultations.get('/stats/completed', requireAuth, async (c) => {
   try {
@@ -329,6 +329,7 @@ consultations.get('/stats/completed', requireAuth, async (c) => {
           GROUP_CONCAT(id) as ids
         FROM consultations 
         WHERE status = 'completed'
+          AND (migrated_to_contract = 0 OR migrated_to_contract IS NULL)
       `)
       .first<{ count: number; ids: string }>();
 
