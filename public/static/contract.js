@@ -1099,6 +1099,7 @@ async function migrateToInstallation(ids) {
     }
   } catch (error) {
     console.error('❌ Migrate to installation error:', error);
+    closeMigrateToInstallationModal();
     alert(error.response?.data?.error || '이관 중 오류가 발생했습니다.');
   }
 }

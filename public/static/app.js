@@ -815,10 +815,43 @@ async function updateProfile() {
 
     if (response.data.success) {
       alert('프로필이 수정되었습니다.');
-      closeProfileModal();
       
-      // 화면 새로고침 (사용자 정보 업데이트 반영)
-      window.location.reload();
+      // 사용자 정보 즉시 업데이트
+      const updatedResponse = await axios.get('/api/auth/me');
+      if (updatedResponse.data.user) {
+        window.currentUser = updatedResponse.data.user;
+        
+        // 좌측 프로필 정보 업데이트
+        const profileNameEl = document.getElementById('userName');
+        const profileRoleEl = document.getElementById('userRole');
+        
+        if (profileNameEl) {
+          profileNameEl.textContent = window.currentUser.name || window.currentUser.username;
+        }
+        if (profileRoleEl) {
+          const roleText = window.currentUser.role === 'master' ? '마스터' : 
+                          window.currentUser.role === 'admin' ? '관리자' : '사용자';
+          profileRoleEl.textContent = roleText;
+        }
+        
+        // 우상단 프로필 정보 업데이트 (헤더 내부)
+        const headerProfileButton = document.querySelector('header button[onclick="showProfileModal()"]');
+        if (headerProfileButton) {
+          const nameSpan = headerProfileButton.querySelector('.font-semibold');
+          const detailSpan = headerProfileButton.querySelector('.text-xs.text-gray-500');
+          
+          if (nameSpan) {
+            nameSpan.textContent = window.currentUser.name || window.currentUser.username;
+          }
+          if (detailSpan) {
+            const dept = window.currentUser.department || window.currentUser.role;
+            const pos = window.currentUser.position ? ' · ' + window.currentUser.position : '';
+            detailSpan.textContent = dept + pos;
+          }
+        }
+      }
+      
+      closeProfileModal();
     }
   } catch (error) {
     console.error('프로필 수정 오류:', error);

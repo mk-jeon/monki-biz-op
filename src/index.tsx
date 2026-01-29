@@ -324,7 +324,16 @@ app.get('/', async (c) => {
       <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
       <script>
         // 사용자 정보
-        const currentUser = ${JSON.stringify({ id: user.id, username: user.username, name: user.name, role: user.role })};
+        window.currentUser = ${JSON.stringify({ 
+          id: user.id, 
+          username: user.username, 
+          name: user.name, 
+          nickname: user.nickname,
+          phone: user.phone,
+          department: user.department,
+          position: user.position,
+          role: user.role 
+        })};
       </script>
       <script src="/static/table-sort.js?v=${BUILD_VERSION}"></script>
       <script src="/static/notice.js?v=${BUILD_VERSION}"></script>
