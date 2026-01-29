@@ -315,6 +315,16 @@ installations.put('/:id', requireAuth, async (c) => {
       }
     }
 
+    // 운영이관 관련
+    if (data.migrated_to_operation !== undefined) {
+      fields.push('migrated_to_operation = ?');
+      bindings.push(data.migrated_to_operation ? 1 : 0);
+    }
+    if (data.migrated_at !== undefined) {
+      fields.push('migrated_at = ?');
+      bindings.push(data.migrated_at);
+    }
+
     if (fields.length === 0) {
       return c.json({ error: '수정할 내용이 없습니다.' }, 400);
     }
