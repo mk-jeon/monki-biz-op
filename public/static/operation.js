@@ -69,7 +69,7 @@ async function loadOperationList(page = 1) {
   console.log(`✅ loadOperationList 실행 (page=${page})`);
   try {
     const response = await axios.get(`/api/operations?page=${page}&limit=50`);
-    let { operations, pagination } = response.data;
+    let { data: operations, pagination } = response.data;
     
     // 정렬 적용
     if (window.sortStates && window.sortStates.operation) {
@@ -242,7 +242,7 @@ async function loadOperationKanban() {
   console.log('✅ loadOperationKanban 실행');
   try {
     const response = await axios.get('/api/operations?limit=1000');
-    const { operations } = response.data;
+    const { data: operations } = response.data;
 
     const statusColumns = [
       { key: 'contract_pending', text: '계약서 미진행', color: 'bg-red-100 border-red-300', icon: 'fa-file-signature' },
@@ -518,7 +518,7 @@ function closeAddOperationModal() {
 async function viewOperationDetail(id) {
   try {
     const response = await axios.get(`/api/operations/${id}`);
-    const op = response.data;
+    const op = response.data.data;
 
     const statusMap = {
       'contract_pending': '계약서 미진행',

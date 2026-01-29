@@ -9,6 +9,7 @@ import consultationRoutes from './routes/consultations';
 import contractRoutes from './routes/contracts';
 import installationRoutes from './routes/installations';
 import operationRoutes from './routes/operations';
+import userRoutes from './routes/users';
 
 // 빌드 시점의 버전 (캐시 무효화용)
 const BUILD_VERSION = Date.now();
@@ -28,6 +29,7 @@ app.route('/api/consultations', consultationRoutes);
 app.route('/api/contracts', contractRoutes);
 app.route('/api/installations', installationRoutes);
 app.route('/api/operations', operationRoutes);
+app.route('/api/users', userRoutes);
 
 // 정적 파일 제공
 app.use('/static/*', serveStatic({ root: './public' }));
@@ -330,6 +332,7 @@ app.get('/', async (c) => {
       <script src="/static/contract.js?v=${BUILD_VERSION}"></script>
       <script src="/static/installation.js?v=${BUILD_VERSION}"></script>
       <script src="/static/operation.js?v=${BUILD_VERSION}"></script>
+      <script src="/static/user-management.js?v=${BUILD_VERSION}"></script>
       <script src="/static/app.js?v=${BUILD_VERSION}"></script>
     </body>
     </html>
