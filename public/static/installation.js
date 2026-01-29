@@ -437,22 +437,6 @@ async function handleInstallationDrop(e) {
   
   return false;
 }
-
-// 임시 함수들 (상세 구현은 필요시 추가)
-function showInstallationDetail(id) {
-  alert(`설치 상세보기: ID ${id}`);
-}
-
-function showInstallationForm(id) {
-  alert(`설치 수정: ID ${id}`);
-}
-
-function deleteInstallation(id) {
-  if (confirm('정말 삭제하시겠습니까?')) {
-    alert(`설치 삭제: ID ${id}`);
-  }
-}
-
 /**
  * 운영 이관 모달 표시
  */
