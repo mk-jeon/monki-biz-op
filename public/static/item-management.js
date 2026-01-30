@@ -1,0 +1,322 @@
+/**
+ * 항목 관리 페이지 (마스터/관리자만)
+ */
+
+(function() {
+  'use strict';
+
+  let currentPage = 'consultation';
+  let currentCategories = [];
+  let currentValues = {};
+
+  // 페이지 로드
+  async function loadItemManagement() {
+    console.log('📋 항목 관리 페이지 로드');
+
+    // 모든 카테고리 조회
+    try {
+      const response = await axios.get('/api/items/categories');
+      currentCategories = response.data.categories;
+
+      // 탭 렌더링
+      renderTabs();
+
+      // 첫 번째 탭 로드
+      await loadPage(currentPage);
+    } catch (error) {
+      console.error('카테고리 조회 오류:', error);
+      alert('카테고리 조회에 실패했습니다.');
+    }
+  }
+
+  // 탭 렌더링
+  function renderTabs() {
+    const pages = [
+      { key: 'consultation', label: '상담현황' },
+      { key: 'contract', label: '계약현황' },
+      { key: 'installation', label: '설치현황' },
+      { key: 'common', label: '공통' }
+    ];
+
+    const tabsHTML = pages.map(page => `
+      <button 
+        class="px-6 py-3 font-medium text-sm transition-colors ${
+          currentPage === page.key 
+            ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50' 
+            : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+        }"
+        onclick="window.itemManagement.loadPage('${page.key}')">
+        ${page.label}
+      </button>
+    `).join('');
+
+    document.getElementById('tabs-container').innerHTML = tabsHTML;
+  }
+
+  // 페이지별 카테고리 로드
+  async function loadPage(page) {
+    currentPage = page;
+    renderTabs();
+
+    const pageCategories = currentCategories.filter(cat => cat.page === page);
+
+    // 각 카테고리의 항목 조회
+    const promises = pageCategories.map(async (category) => {
+      const response = await axios.get(`/api/items/categories/${category.id}/values`);
+      currentValues[category.id] = response.data.values;
+    });
+
+    await Promise.all(promises);
+
+    // 카테고리 리스트 렌더링
+    renderCategories(pageCategories);
+  }
+
+  // 카테고리 리스트 렌더링
+  function renderCategories(categories) {
+    const html = categories.map(category => `
+      <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h3 class="text-lg font-bold text-gray-900">${category.label}</h3>
+            <p class="text-sm text-gray-500 mt-1">${category.description || ''}</p>
+          </div>
+          <button 
+            class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition"
+            onclick="window.itemManagement.showAddModal(${category.id}, '${category.label}')">
+            <i class="fas fa-plus mr-2"></i>추가
+          </button>
+        </div>
+
+        <div class="space-y-2">
+          ${renderValues(category.id)}
+        </div>
+      </div>
+    `).join('');
+
+    document.getElementById('categories-container').innerHTML = html || '<p class="text-gray-500 text-center py-8">항목이 없습니다.</p>';
+  }
+
+  // 항목 리스트 렌더링
+  function renderValues(categoryId) {
+    const values = currentValues[categoryId] || [];
+
+    if (values.length === 0) {
+      return '<p class="text-gray-500 text-sm py-4">등록된 항목이 없습니다.</p>';
+    }
+
+    return values.map(value => `
+      <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+        <div class="flex-1">
+          <span class="text-gray-900 font-medium">${value.label}</span>
+          <span class="text-gray-500 text-sm ml-2">(${value.value})</span>
+        </div>
+        <div class="flex items-center space-x-2">
+          <button 
+            class="px-3 py-1 text-sm text-blue-600 hover:bg-blue-50 rounded transition"
+            onclick="window.itemManagement.showEditModal(${categoryId}, ${value.id})">
+            <i class="fas fa-edit mr-1"></i>수정
+          </button>
+          <button 
+            class="px-3 py-1 text-sm text-red-600 hover:bg-red-50 rounded transition"
+            onclick="window.itemManagement.deleteValue(${categoryId}, ${value.id})">
+            <i class="fas fa-trash mr-1"></i>삭제
+          </button>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  // 추가 모달 표시
+  function showAddModal(categoryId, categoryLabel) {
+    const modal = document.createElement('div');
+    modal.id = 'item-modal';
+    modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+    modal.innerHTML = `
+      <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-md">
+        <h3 class="text-xl font-bold text-gray-900 mb-4">항목 추가 - ${categoryLabel}</h3>
+        
+        <div class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">값 (영문코드)</label>
+            <input type="text" id="item-value" 
+                   class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                   placeholder="예: new_option">
+          </div>
+          
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">표시명 (한글)</label>
+            <input type="text" id="item-label" 
+                   class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                   placeholder="예: 새 옵션">
+          </div>
+          
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">정렬 순서</label>
+            <input type="number" id="item-sort" 
+                   class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                   value="0">
+          </div>
+        </div>
+
+        <div class="flex justify-end space-x-3 mt-6">
+          <button 
+            class="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition"
+            onclick="window.itemManagement.closeModal()">
+            취소
+          </button>
+          <button 
+            class="px-4 py-2 text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition"
+            onclick="window.itemManagement.saveNewValue(${categoryId})">
+            추가
+          </button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(modal);
+  }
+
+  // 수정 모달 표시
+  function showEditModal(categoryId, valueId) {
+    const values = currentValues[categoryId];
+    const value = values.find(v => v.id === valueId);
+    
+    if (!value) return;
+
+    const modal = document.createElement('div');
+    modal.id = 'item-modal';
+    modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+    modal.innerHTML = `
+      <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-md">
+        <h3 class="text-xl font-bold text-gray-900 mb-4">항목 수정</h3>
+        
+        <div class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">값 (영문코드)</label>
+            <input type="text" id="item-value" 
+                   class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                   value="${value.value}">
+          </div>
+          
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">표시명 (한글)</label>
+            <input type="text" id="item-label" 
+                   class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                   value="${value.label}">
+          </div>
+          
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">정렬 순서</label>
+            <input type="number" id="item-sort" 
+                   class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                   value="${value.sort_order}">
+          </div>
+        </div>
+
+        <div class="flex justify-end space-x-3 mt-6">
+          <button 
+            class="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition"
+            onclick="window.itemManagement.closeModal()">
+            취소
+          </button>
+          <button 
+            class="px-4 py-2 text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition"
+            onclick="window.itemManagement.saveEditValue(${categoryId}, ${valueId})">
+            저장
+          </button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(modal);
+  }
+
+  // 모달 닫기
+  function closeModal() {
+    const modal = document.getElementById('item-modal');
+    if (modal) modal.remove();
+  }
+
+  // 새 항목 저장
+  async function saveNewValue(categoryId) {
+    const value = document.getElementById('item-value').value.trim();
+    const label = document.getElementById('item-label').value.trim();
+    const sort_order = parseInt(document.getElementById('item-sort').value) || 0;
+
+    if (!value || !label) {
+      alert('값과 표시명을 모두 입력해주세요.');
+      return;
+    }
+
+    try {
+      await axios.post('/api/items/values', {
+        category_id: categoryId,
+        value,
+        label,
+        sort_order
+      });
+
+      alert('항목이 추가되었습니다.');
+      closeModal();
+      await loadPage(currentPage);
+    } catch (error) {
+      console.error('항목 추가 오류:', error);
+      alert(error.response?.data?.error || '항목 추가에 실패했습니다.');
+    }
+  }
+
+  // 항목 수정 저장
+  async function saveEditValue(categoryId, valueId) {
+    const value = document.getElementById('item-value').value.trim();
+    const label = document.getElementById('item-label').value.trim();
+    const sort_order = parseInt(document.getElementById('item-sort').value) || 0;
+
+    if (!value || !label) {
+      alert('값과 표시명을 모두 입력해주세요.');
+      return;
+    }
+
+    try {
+      await axios.put(`/api/items/values/${valueId}`, {
+        value,
+        label,
+        sort_order
+      });
+
+      alert('항목이 수정되었습니다.');
+      closeModal();
+      await loadPage(currentPage);
+    } catch (error) {
+      console.error('항목 수정 오류:', error);
+      alert(error.response?.data?.error || '항목 수정에 실패했습니다.');
+    }
+  }
+
+  // 항목 삭제
+  async function deleteValue(categoryId, valueId) {
+    if (!confirm('이 항목을 삭제하시겠습니까?')) return;
+
+    try {
+      await axios.delete(`/api/items/values/${valueId}`);
+
+      alert('항목이 삭제되었습니다.');
+      await loadPage(currentPage);
+    } catch (error) {
+      console.error('항목 삭제 오류:', error);
+      alert(error.response?.data?.error || '항목 삭제에 실패했습니다.');
+    }
+  }
+
+  // window 객체에 바인딩
+  window.itemManagement = {
+    loadItemManagement,
+    loadPage,
+    showAddModal,
+    showEditModal,
+    closeModal,
+    saveNewValue,
+    saveEditValue,
+    deleteValue
+  };
+
+  console.log('✅ 항목 관리 모듈 로드 완료');
+})();

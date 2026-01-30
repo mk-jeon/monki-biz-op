@@ -11,6 +11,7 @@ import installationRoutes from './routes/installations';
 import operationRoutes from './routes/operations';
 import userRoutes from './routes/users';
 import departmentRoutes from './routes/departments';
+import itemRoutes from './routes/items';
 
 // 빌드 시점의 버전 (캐시 무효화용)
 const BUILD_VERSION = Date.now();
@@ -32,6 +33,7 @@ app.route('/api/installations', installationRoutes);
 app.route('/api/operations', operationRoutes);
 app.route('/api/users', userRoutes);
 app.route('/api/departments', departmentRoutes);
+app.route('/api/items', itemRoutes);
 
 // 정적 파일 제공
 app.use('/static/*', serveStatic({ root: './public' }));
