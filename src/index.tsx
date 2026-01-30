@@ -342,6 +342,8 @@ app.get('/', async (c) => {
         })};
       </script>
       <script src="/static/table-sort.js?v=${BUILD_VERSION}"></script>
+      <script src="/static/item-management.js?v=${BUILD_VERSION}"></script>
+      <script src="/static/franchise.js?v=${BUILD_VERSION}"></script>
       <script src="/static/dropdown-helper.js?v=${BUILD_VERSION}"></script>
       <script src="/static/notice.js?v=${BUILD_VERSION}"></script>
       <script src="/static/consultation.js?v=${BUILD_VERSION}"></script>
@@ -349,8 +351,6 @@ app.get('/', async (c) => {
       <script src="/static/installation.js?v=${BUILD_VERSION}"></script>
       <script src="/static/operation.js?v=${BUILD_VERSION}"></script>
       <script src="/static/user-management.js?v=${BUILD_VERSION}"></script>
-      <script src="/static/item-management.js?v=${BUILD_VERSION}"></script>
-      <script src="/static/franchise.js?v=${BUILD_VERSION}"></script>
       <script src="/static/app.js?v=${BUILD_VERSION}"></script>
     </body>
     </html>
