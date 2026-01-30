@@ -12,6 +12,7 @@ import operationRoutes from './routes/operations';
 import userRoutes from './routes/users';
 import departmentRoutes from './routes/departments';
 import itemRoutes from './routes/items';
+import franchiseRoutes from './routes/franchises';
 
 // 빌드 시점의 버전 (캐시 무효화용)
 const BUILD_VERSION = Date.now();
@@ -34,6 +35,7 @@ app.route('/api/operations', operationRoutes);
 app.route('/api/users', userRoutes);
 app.route('/api/departments', departmentRoutes);
 app.route('/api/items', itemRoutes);
+app.route('/api/franchises', franchiseRoutes);
 
 // 정적 파일 제공
 app.use('/static/*', serveStatic({ root: './public' }));
@@ -348,6 +350,7 @@ app.get('/', async (c) => {
       <script src="/static/operation.js?v=${BUILD_VERSION}"></script>
       <script src="/static/user-management.js?v=${BUILD_VERSION}"></script>
       <script src="/static/item-management.js?v=${BUILD_VERSION}"></script>
+      <script src="/static/franchise.js?v=${BUILD_VERSION}"></script>
       <script src="/static/app.js?v=${BUILD_VERSION}"></script>
     </body>
     </html>
