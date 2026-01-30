@@ -38,6 +38,27 @@ let currentContractViewMode = 'list'; // 'list' or 'kanban'
 let contractTypes = []; // 계약유형 목록
 
 /**
+ * ⚠️ [중요] 테이블 헤더 한글 매핑 상수
+ * 
+ * 계약현황 리스트 모드에서 테이블 헤더가 영문 필드명으로 노출되는 문제를 방지하기 위해
+ * 이 매핑 객체를 반드시 사용해야 합니다.
+ * 
+ * 추후 코드 수정 시에도 이 매핑이 누락되지 않도록 주의하세요!
+ */
+const CONTRACT_HEADER_MAP = {
+  'id': '번호',
+  'status': '상태',
+  'customer_name': '고객명',
+  'phone': '연락처',
+  'inflow_source': '유입경로',
+  'option': '옵션',
+  'created_at': '등록일',
+  'created_by_name': '등록자',
+  'modifier': '수정자',
+  'management': '관리'
+};
+
+/**
  * 계약 정렬 처리 함수
  */
 function handleSort_contract(field) {
@@ -134,16 +155,16 @@ async function loadContractList(page = 1) {
           <table class="w-full">
             <thead class="bg-gray-50 border-b-2 border-gray-200">
               <tr>
-                ${createSortableHeader('id', 'ID', 'contract', 'px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase')}
-                ${createSortableHeader('status', '상태', 'contract', 'px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase')}
-                ${createSortableHeader('customer_name', '고객명', 'contract', 'px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase')}
-                ${createSortableHeader('phone', '전화번호', 'contract', 'px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase')}
-                ${createSortableHeader('inflow_source', '유입경로', 'contract', 'px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase')}
-                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">옵션</th>
-                ${createSortableHeader('created_at', '등록일', 'contract', 'px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase')}
-                ${createSortableHeader('created_by_name', '등록자', 'contract', 'px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase')}
-                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">수정자</th>
-                <th class="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase">관리</th>
+                ${createSortableHeader('id', CONTRACT_HEADER_MAP['id'], 'contract', 'px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase')}
+                ${createSortableHeader('status', CONTRACT_HEADER_MAP['status'], 'contract', 'px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase')}
+                ${createSortableHeader('customer_name', CONTRACT_HEADER_MAP['customer_name'], 'contract', 'px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase')}
+                ${createSortableHeader('phone', CONTRACT_HEADER_MAP['phone'], 'contract', 'px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase')}
+                ${createSortableHeader('inflow_source', CONTRACT_HEADER_MAP['inflow_source'], 'contract', 'px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase')}
+                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">${CONTRACT_HEADER_MAP['option']}</th>
+                ${createSortableHeader('created_at', CONTRACT_HEADER_MAP['created_at'], 'contract', 'px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase')}
+                ${createSortableHeader('created_by_name', CONTRACT_HEADER_MAP['created_by_name'], 'contract', 'px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase')}
+                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">${CONTRACT_HEADER_MAP['modifier']}</th>
+                <th class="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase">${CONTRACT_HEADER_MAP['management']}</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-gray-200">
