@@ -33,6 +33,7 @@ function formatDate(dateString) {
 
 let currentInstallationPage = 1;
 let currentInstallationViewMode = 'list';
+let installationTypes = []; // 설치유형 목록
 
 /**
  * 설치 정렬 처리 함수
@@ -46,6 +47,8 @@ function handleSort_installation(field) {
  */
 async function loadInstallationPage() {
   console.log('✅ loadInstallationPage 호출됨');
+  // 드롭다운 항목 로드
+  await loadDropdownItems('installation_type').then(items => installationTypes = items);
   loadInstallationList();
 }
 

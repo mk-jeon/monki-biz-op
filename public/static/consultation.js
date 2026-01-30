@@ -3,6 +3,8 @@
 let currentConsultationPage = 1;
 let currentViewMode = 'list'; // 'list' or 'kanban'
 let inflowSources = []; // 유입경로 목록
+let consultationPurposes = []; // 상담목적 목록
+let consultationChannels = []; // 상담경로 목록
 
 /**
  * 상담 정렬 처리 함수
@@ -15,23 +17,15 @@ function handleSort_consultation(field) {
  * 상담현황 페이지 로드
  */
 async function loadConsultationPage() {
-  // 유입경로 목록 먼저 로드
-  await loadInflowSources();
+  // 드롭다운 항목 먼저 로드
+  await Promise.all([
+    loadDropdownItems('inflow_source').then(items => inflowSources = items),
+    loadDropdownItems('consultation_purpose').then(items => consultationPurposes = items),
+    loadDropdownItems('consultation_channel').then(items => consultationChannels = items)
+  ]);
   
   // 리스트 모드로 시작
   loadConsultationList();
-}
-
-/**
- * 유입경로 목록 로드
- */
-async function loadInflowSources() {
-  try {
-    const response = await axios.get('/api/consultations/categories/inflow_source');
-    inflowSources = response.data.items;
-  } catch (error) {
-    console.error('Load inflow sources error:', error);
-  }
 }
 
 /**
@@ -437,17 +431,7 @@ async function showConsultationForm(id = null) {
           <label class="block text-sm font-medium text-gray-700 mb-2">
             유입경로
           </label>
-          <select
-            id="inflowSource"
-            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-          >
-            <option value="">선택하세요</option>
-            ${inflowSources.map(source => `
-              <option value="${source.value}" ${isEdit && consultation && consultation.inflow_source === source.value ? 'selected' : ''}>
-                ${source.value}
-              </option>
-            `).join('')}
-          </select>
+          ${createDropdownHTML('inflowSource', 'inflow_source', inflowSources, isEdit && consultation ? consultation.inflow_source : '')}
         </div>
 
         ${isEdit ? `

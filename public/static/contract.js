@@ -35,7 +35,7 @@ function formatDate(dateString) {
 
 let currentContractPage = 1;
 let currentContractViewMode = 'list'; // 'list' or 'kanban'
-let inflowSources = []; // 유입경로 목록 (상담에서 가져옴)
+let contractTypes = []; // 계약유형 목록
 
 /**
  * 계약 정렬 처리 함수
@@ -51,9 +51,9 @@ console.log('🔵 contract.js 시작 - 파일 로딩 중...');
  */
 async function loadContractPage() {
   console.log('✅ loadContractPage 함수 호출됨');
-  // 유입경로 목록 먼저 로드
-  await loadInflowSourcesForContract();
-  console.log('✅ loadInflowSourcesForContract 완료');
+  // 드롭다운 항목 로드
+  await loadDropdownItems('contract_type').then(items => contractTypes = items);
+  console.log('✅ contractTypes 로드 완료');
   
   // 리스트 모드로 시작
   console.log('✅ loadContractList 호출 직전');
@@ -61,19 +61,6 @@ async function loadContractPage() {
   console.log('✅ loadContractList 호출 완료');
 }
 console.log('🟢 loadContractPage 함수 정의 완료');
-
-// 즉시 window에 바인딩
-/**
- * 유입경로 목록 로드
- */
-async function loadInflowSourcesForContract() {
-  try {
-    const response = await axios.get('/api/consultations/categories/inflow_source');
-    inflowSources = response.data.items;
-  } catch (error) {
-    console.error('Load inflow sources error:', error);
-  }
-}
 
 /**
  * 리스트/칸반 모드 전환
