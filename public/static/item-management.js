@@ -9,16 +9,46 @@
   let currentCategories = [];
   let currentValues = {};
 
+  // DOM 요소 대기 헬퍼 함수 (Retry 로직 포함)
+  function waitForElement(selector, maxRetries = 10, interval = 300) {
+    return new Promise((resolve, reject) => {
+      let retries = 0;
+      
+      const checkElement = () => {
+        const element = document.getElementById(selector);
+        
+        if (element) {
+          console.log(`✅ [item-management.js] 요소 발견: #${selector} (시도 ${retries + 1}/${maxRetries})`);
+          resolve(element);
+        } else if (retries >= maxRetries) {
+          console.error(`❌ [item-management.js] 요소를 찾을 수 없음: #${selector} (최대 ${maxRetries}회 시도)`);
+          reject(new Error(`요소를 찾을 수 없습니다: #${selector}`));
+        } else {
+          retries++;
+          console.log(`⏳ [item-management.js] 요소 대기 중: #${selector} (시도 ${retries}/${maxRetries})`);
+          setTimeout(checkElement, interval);
+        }
+      };
+      
+      checkElement();
+    });
+  }
+
   // 페이지 로드
   async function loadItemManagement() {
-    console.log('📋 항목 관리 페이지 로드');
+    console.log('📋 항목 관리 페이지 로드 시작');
 
-    // 메인 컨테이너 생성
-    const mainContent = document.getElementById('main-content');
-    if (!mainContent) {
-      console.error('❌ main-content 요소를 찾을 수 없습니다.');
+    // mainContent 요소를 찾을 때까지 최대 10회 재시도 (총 3초)
+    let mainContent;
+    try {
+      mainContent = await waitForElement('mainContent', 10, 300);
+    } catch (error) {
+      console.error('❌ mainContent 요소를 찾을 수 없습니다:', error);
+      alert('페이지를 로드할 수 없습니다. 새로고침해주세요.');
       return;
     }
+
+    console.log('✅ mainContent 요소 확인 완료');
 
     mainContent.innerHTML = `
       <div class="bg-white rounded-lg shadow-md p-6">
@@ -67,6 +97,8 @@
       </div>
     `;
 
+    console.log('✅ HTML 구조 생성 완료');
+
     // 모든 카테고리 조회
     try {
       const response = await axios.get('/api/items/categories');
@@ -77,6 +109,8 @@
 
       // 첫 번째 탭 로드
       await loadPage(currentPage);
+      
+      console.log('✅ 항목 관리 페이지 로드 완료');
     } catch (error) {
       console.error('카테고리 조회 오류:', error);
       alert('카테고리 조회에 실패했습니다.');
@@ -129,7 +163,7 @@
   // 카테고리 리스트 렌더링
   function renderCategories(categories) {
     const html = categories.map(category => `
-      <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+      <div class="bg-white border border-gray-200 rounded-lg shadow-sm p-6 mb-6">
         <div class="flex items-center justify-between mb-4">
           <div>
             <h3 class="text-lg font-bold text-gray-900">${category.label}</h3>
@@ -142,8 +176,23 @@
           </button>
         </div>
 
-        <div class="space-y-2">
-          ${renderValues(category.id)}
+        <div class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+              <tr>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">순번</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">값 (코드)</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">표시명</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">정렬순서</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">활성화</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">등록일</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">작업</th>
+              </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+              ${renderValues(category.id)}
+            </tbody>
+          </table>
         </div>
       </div>
     `).join('');
@@ -151,34 +200,46 @@
     document.getElementById('categories-container').innerHTML = html || '<p class="text-gray-500 text-center py-8">항목이 없습니다.</p>';
   }
 
-  // 항목 리스트 렌더링
+  // 항목 리스트 렌더링 (테이블 형식)
   function renderValues(categoryId) {
     const values = currentValues[categoryId] || [];
 
     if (values.length === 0) {
-      return '<p class="text-gray-500 text-sm py-4">등록된 항목이 없습니다.</p>';
+      return '<tr><td colspan="7" class="px-4 py-8 text-center text-gray-500">등록된 항목이 없습니다.</td></tr>';
     }
 
-    return values.map(value => `
-      <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
-        <div class="flex-1">
-          <span class="text-gray-900 font-medium">${value.label}</span>
-          <span class="text-gray-500 text-sm ml-2">(${value.value})</span>
-        </div>
-        <div class="flex items-center space-x-2">
+    return values.map((value, index) => `
+      <tr class="hover:bg-gray-50 transition">
+        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-900">${index + 1}</td>
+        <td class="px-4 py-4 whitespace-nowrap text-sm font-mono text-gray-600">${value.value}</td>
+        <td class="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${value.label}</td>
+        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-600">${value.sort_order}</td>
+        <td class="px-4 py-4 whitespace-nowrap">
+          ${value.is_active 
+            ? '<span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">활성</span>' 
+            : '<span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">비활성</span>'}
+        </td>
+        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-500">${formatDate(value.created_at)}</td>
+        <td class="px-4 py-4 whitespace-nowrap text-sm font-medium">
           <button 
-            class="px-3 py-1 text-sm text-blue-600 hover:bg-blue-50 rounded transition"
+            class="text-blue-600 hover:text-blue-900 mr-3 transition"
             onclick="window.itemManagement.showEditModal(${categoryId}, ${value.id})">
-            <i class="fas fa-edit mr-1"></i>수정
+            <i class="fas fa-edit"></i>
           </button>
           <button 
-            class="px-3 py-1 text-sm text-red-600 hover:bg-red-50 rounded transition"
+            class="text-red-600 hover:text-red-900 transition"
             onclick="window.itemManagement.deleteValue(${categoryId}, ${value.id})">
-            <i class="fas fa-trash mr-1"></i>삭제
+            <i class="fas fa-trash"></i>
           </button>
-        </div>
-      </div>
+        </td>
+      </tr>
     `).join('');
+  }
+
+  // 날짜 포맷
+  function formatDate(dateStr) {
+    if (!dateStr) return '-';
+    return new Date(dateStr).toLocaleDateString('ko-KR');
   }
 
   // 추가 모달 표시
@@ -345,9 +406,9 @@
     }
   }
 
-  // 항목 삭제
+  // 항목 삭제 (soft delete)
   async function deleteValue(categoryId, valueId) {
-    if (!confirm('이 항목을 삭제하시겠습니까?')) return;
+    if (!confirm('이 항목을 삭제하시겠습니까?\n(삭제 시 드롭다운에서 숨겨지며, 기존 데이터는 유지됩니다)')) return;
 
     try {
       await axios.delete(`/api/items/values/${valueId}`);
