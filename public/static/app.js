@@ -235,8 +235,33 @@ try {
 
 console.log('🧭 네비게이션 버튼 초기화');
 
+// DOM 요소가 완전히 렌더링될 때까지 기다리는 헬퍼 함수
+function waitForElement(selector, maxRetries = 10, interval = 100) {
+  return new Promise((resolve, reject) => {
+    let retries = 0;
+    
+    const checkElement = () => {
+      const element = document.getElementById(selector);
+      
+      if (element) {
+        console.log(`✅ 요소 발견: #${selector} (시도 ${retries + 1}/${maxRetries})`);
+        resolve(element);
+      } else if (retries >= maxRetries) {
+        console.error(`❌ 요소를 찾을 수 없음: #${selector} (최대 ${maxRetries}회 시도)`);
+        reject(new Error(`요소를 찾을 수 없습니다: #${selector}`));
+      } else {
+        retries++;
+        console.log(`⏳ 요소 대기 중: #${selector} (시도 ${retries}/${maxRetries})`);
+        setTimeout(checkElement, interval);
+      }
+    };
+    
+    checkElement();
+  });
+}
+
 // 페이지 로드
-function loadPage(page, addToHistory = true) {
+async function loadPage(page, addToHistory = true) {
   console.log(`📄 loadPage 호출: page="${page}", addToHistory=${addToHistory}`);
   
   if (addToHistory) {
@@ -504,21 +529,60 @@ function loadPage(page, addToHistory = true) {
     return;
   }
 
+  // 가맹점현황 페이지
   if (page === 'franchise') {
-    console.log('🏪 가맹점현황 페이지 로드');
+    console.log('🏪 가맹점현황 페이지 로드 시작');
     mainContent.innerHTML = '<div class="flex items-center justify-center h-64"><i class="fas fa-spinner fa-spin text-4xl text-indigo-600"></i></div>';
     
     if (typeof window.franchise?.loadFranchisePage === 'function') {
-      window.franchise.loadFranchisePage();
+      console.log('✅ franchise.loadFranchisePage 함수 발견');
+      
+      // DOM이 완전히 렌더링될 때까지 기다림
+      try {
+        await waitForElement('mainContent', 5, 200);
+        console.log('✅ mainContent DOM 렌더링 완료, franchise.js 실행');
+        await window.franchise.loadFranchisePage();
+      } catch (error) {
+        console.error('❌ DOM 렌더링 타임아웃 또는 실행 오류:', error);
+        mainContent.innerHTML = `
+          <div class="bg-white rounded-lg shadow-md p-8 text-center">
+            <div class="inline-block p-6 bg-red-100 rounded-full mb-4">
+              <i class="fas fa-exclamation-triangle text-red-600 text-5xl"></i>
+            </div>
+            <h2 class="text-2xl font-bold text-gray-800 mb-2">페이지 로드 오류</h2>
+            <p class="text-gray-600 mb-4">가맹점현황 페이지를 불러올 수 없습니다.</p>
+            <button onclick="window.location.reload()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-lg transition">
+              새로고침
+            </button>
+          </div>
+        `;
+      }
     } else {
       console.error('❌ franchise.loadFranchisePage 함수가 아직 로드되지 않았습니다.');
       
-      setTimeout(() => {
+      setTimeout(async () => {
         if (typeof window.franchise?.loadFranchisePage === 'function') {
-          console.log('✅ franchise.js 로드 완료, 함수 실행');
-          window.franchise.loadFranchisePage();
+          console.log('✅ franchise.js 로드 완료 (재시도)');
+          try {
+            await waitForElement('mainContent', 5, 200);
+            await window.franchise.loadFranchisePage();
+          } catch (error) {
+            console.error('❌ 재시도 후에도 실패:', error);
+            mainContent.innerHTML = `
+              <div class="bg-white rounded-lg shadow-md p-8 text-center">
+                <div class="inline-block p-6 bg-red-100 rounded-full mb-4">
+                  <i class="fas fa-exclamation-triangle text-red-600 text-5xl"></i>
+                </div>
+                <h2 class="text-2xl font-bold text-gray-800 mb-2">페이지 로드 오류</h2>
+                <p class="text-gray-600 mb-4">가맹점현황 페이지를 불러올 수 없습니다.</p>
+                <button onclick="window.location.reload()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-lg transition">
+                  새로고침
+                </button>
+              </div>
+            `;
+          }
         } else {
-          console.error('❌ franchise.js 로드 실패');
+          console.error('❌ franchise.js 로드 실패 (재시도 후에도)');
           mainContent.innerHTML = `
             <div class="bg-white rounded-lg shadow-md p-8 text-center">
               <div class="inline-block p-6 bg-red-100 rounded-full mb-4">

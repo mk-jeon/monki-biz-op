@@ -11,20 +11,52 @@
   let currentRegion = '';
   let userRole = '';
 
+  // DOM 요소 대기 헬퍼 함수 (Retry 로직 포함)
+  function waitForElement(selector, maxRetries = 5, interval = 200) {
+    return new Promise((resolve, reject) => {
+      let retries = 0;
+      
+      const checkElement = () => {
+        const element = document.getElementById(selector);
+        
+        if (element) {
+          console.log(`✅ [franchise.js] 요소 발견: #${selector} (시도 ${retries + 1}/${maxRetries})`);
+          resolve(element);
+        } else if (retries >= maxRetries) {
+          console.error(`❌ [franchise.js] 요소를 찾을 수 없음: #${selector} (최대 ${maxRetries}회 시도)`);
+          reject(new Error(`요소를 찾을 수 없습니다: #${selector}`));
+        } else {
+          retries++;
+          console.log(`⏳ [franchise.js] 요소 대기 중: #${selector} (시도 ${retries}/${maxRetries})`);
+          setTimeout(checkElement, interval);
+        }
+      };
+      
+      checkElement();
+    });
+  }
+
   // 페이지 로드
   async function loadFranchisePage() {
-    console.log('🏪 가맹점현황 페이지 로드');
+    console.log('🏪 가맹점현황 페이지 로드 시작');
 
-    const mainContent = document.getElementById('main-content');
-    if (!mainContent) {
-      console.error('❌ main-content 요소를 찾을 수 없습니다.');
+    // mainContent 요소를 찾을 때까지 최대 5회 재시도 (총 1초)
+    let mainContent;
+    try {
+      mainContent = await waitForElement('mainContent', 5, 200);
+    } catch (error) {
+      console.error('❌ mainContent 요소를 찾을 수 없습니다:', error);
+      alert('페이지를 로드할 수 없습니다. 새로고침해주세요.');
       return;
     }
+
+    console.log('✅ mainContent 요소 확인 완료');
 
     // 사용자 정보 가져오기
     try {
       const userResponse = await axios.get('/api/auth/me');
       userRole = userResponse.data.user.role;
+      console.log('✅ 사용자 정보 조회 완료:', userRole);
     } catch (error) {
       console.error('사용자 정보 조회 오류:', error);
       userRole = 'user';
@@ -105,10 +137,13 @@
       </div>
     `;
 
+    console.log('✅ HTML 구조 생성 완료');
+
     try {
       await loadStats();
       await loadRegions();
       await loadList();
+      console.log('✅ 가맹점현황 페이지 로드 완료');
     } catch (error) {
       console.error('페이지 로드 오류:', error);
       mainContent.innerHTML += '<div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mt-4">데이터를 불러오는데 실패했습니다.</div>';
