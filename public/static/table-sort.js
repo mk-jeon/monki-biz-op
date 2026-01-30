@@ -6,7 +6,8 @@
 const sortStates = {
   consultation: { field: null, order: 0 },
   contract: { field: null, order: 0 },
-  installation: { field: null, order: 0 }
+  installation: { field: null, order: 0 },
+  user: { field: null, order: 0 }
 };
 
 // 상태 우선순위 (낮을수록 위로)
