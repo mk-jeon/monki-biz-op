@@ -169,7 +169,7 @@
 
 ### 로그인
 1. 브라우저에서 https://3000-ikweelui4r2y3zoxxkatc-d0b9e1e2.sandbox.novita.ai 접속
-2. 마스터 계정 정보 입력 (minhiti88 / Axieslin12!)
+2. 마스터 계정 정보 입력 (master / Master1234!)
 3. 로그인 버튼 클릭
 
 ### 대시보드 사용
