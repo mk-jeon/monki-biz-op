@@ -475,15 +475,15 @@ function loadPage(page, addToHistory = true) {
     console.log('⚙️ 항목 관리 페이지 로드');
     mainContent.innerHTML = '<div class="flex items-center justify-center h-64"><i class="fas fa-spinner fa-spin text-4xl text-indigo-600"></i></div>';
     
-    if (typeof window.loadItemManagementPage === 'function') {
-      loadItemManagementPage();
+    if (typeof window.itemManagement?.loadItemManagement === 'function') {
+      window.itemManagement.loadItemManagement();
     } else {
-      console.error('❌ loadItemManagementPage 함수가 아직 로드되지 않았습니다.');
+      console.error('❌ itemManagement.loadItemManagement 함수가 아직 로드되지 않았습니다.');
       
       setTimeout(() => {
-        if (typeof window.loadItemManagementPage === 'function') {
+        if (typeof window.itemManagement?.loadItemManagement === 'function') {
           console.log('✅ item-management.js 로드 완료, 함수 실행');
-          loadItemManagementPage();
+          window.itemManagement.loadItemManagement();
         } else {
           console.error('❌ item-management.js 로드 실패');
           mainContent.innerHTML = `
