@@ -13,6 +13,60 @@
   async function loadItemManagement() {
     console.log('📋 항목 관리 페이지 로드');
 
+    // 메인 컨테이너 생성
+    const mainContent = document.getElementById('main-content');
+    if (!mainContent) {
+      console.error('❌ main-content 요소를 찾을 수 없습니다.');
+      return;
+    }
+
+    mainContent.innerHTML = `
+      <div class="bg-white rounded-lg shadow-md p-6">
+        <h2 class="text-2xl font-bold text-gray-900 mb-6">항목 관리</h2>
+        
+        <!-- 탭 -->
+        <div id="tabs-container" class="flex border-b border-gray-200 mb-6"></div>
+        
+        <!-- 카테고리 컨테이너 -->
+        <div id="categories-container"></div>
+      </div>
+
+      <!-- 모달 -->
+      <div id="item-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-md">
+          <h3 id="modal-title" class="text-xl font-bold text-gray-900 mb-4"></h3>
+          
+          <div class="space-y-4">
+            <div id="category-select-container"></div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">값 (영문)</label>
+              <input type="text" id="item-value" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">표시명 (한글)</label>
+              <input type="text" id="item-label" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">정렬순서</label>
+              <input type="number" id="item-sort" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" value="0">
+            </div>
+          </div>
+          
+          <div class="flex justify-end gap-2 mt-6">
+            <button onclick="window.itemManagement.closeModal()" class="px-4 py-2 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition">
+              취소
+            </button>
+            <button id="modal-save-btn" class="px-4 py-2 text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition">
+              저장
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+
     // 모든 카테고리 조회
     try {
       const response = await axios.get('/api/items/categories');
