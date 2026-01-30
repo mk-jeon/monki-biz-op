@@ -15,7 +15,7 @@ import itemRoutes from './routes/items';
 import franchiseRoutes from './routes/franchises';
 
 // 빌드 시점의 버전 (캐시 무효화용)
-const BUILD_VERSION = Date.now();
+const BUILD_VERSION = 20260130142100; // 강제 캐시 무효화
 
 const app = new Hono<{ Bindings: Bindings; Variables: Variables }>();
 
