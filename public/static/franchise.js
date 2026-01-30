@@ -9,21 +9,39 @@
   let currentSearch = '';
   let currentStatus = '';
   let currentRegion = '';
+  let userRole = '';
 
   // 페이지 로드
   async function loadFranchisePage() {
     console.log('🏪 가맹점현황 페이지 로드');
 
     const mainContent = document.getElementById('main-content');
-    if (!mainContent) return;
+    if (!mainContent) {
+      console.error('❌ main-content 요소를 찾을 수 없습니다.');
+      return;
+    }
+
+    // 사용자 정보 가져오기
+    try {
+      const userResponse = await axios.get('/api/auth/me');
+      userRole = userResponse.data.user.role;
+    } catch (error) {
+      console.error('사용자 정보 조회 오류:', error);
+      userRole = 'user';
+    }
+
+    // 등록 버튼은 마스터/관리자만 표시
+    const addButton = (userRole === 'master' || userRole === 'admin') 
+      ? `<button onclick="window.franchise.showForm()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+           <i class="fas fa-plus mr-2"></i>가맹점 등록
+         </button>`
+      : '';
 
     mainContent.innerHTML = `
       <div class="bg-white rounded-lg shadow-md p-6">
         <div class="flex items-center justify-between mb-6">
           <h2 class="text-2xl font-bold text-gray-900">가맹점현황</h2>
-          <button onclick="window.franchise.showForm()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
-            <i class="fas fa-plus mr-2"></i>가맹점 등록
-          </button>
+          ${addButton}
         </div>
 
         <!-- 필터 -->
@@ -87,9 +105,14 @@
       </div>
     `;
 
-    await loadStats();
-    await loadRegions();
-    await loadList();
+    try {
+      await loadStats();
+      await loadRegions();
+      await loadList();
+    } catch (error) {
+      console.error('페이지 로드 오류:', error);
+      mainContent.innerHTML += '<div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mt-4">데이터를 불러오는데 실패했습니다.</div>';
+    }
   }
 
   // 통계 로드
@@ -166,10 +189,18 @@
   function renderList(franchises) {
     const container = document.getElementById('franchise-list');
     
+    if (!container) {
+      console.error('❌ franchise-list 요소를 찾을 수 없습니다.');
+      return;
+    }
+    
     if (franchises.length === 0) {
       container.innerHTML = '<p class="text-gray-500 text-center py-8">가맹점이 없습니다.</p>';
       return;
     }
+
+    // 수정 버튼은 마스터/관리자만 표시
+    const canEdit = (userRole === 'master' || userRole === 'admin');
 
     const html = `
       <table class="min-w-full divide-y divide-gray-200">
@@ -198,12 +229,14 @@
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${formatDate(f.contract_date)}</td>
               <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                <button onclick="event.stopPropagation(); window.franchise.showDetail(${f.id})" class="text-blue-600 hover:text-blue-900 mr-3">
+                <button onclick="event.stopPropagation(); window.franchise.showDetail(${f.id})" class="text-blue-600 hover:text-blue-900 ${canEdit ? 'mr-3' : ''}">
                   <i class="fas fa-eye"></i>
                 </button>
+                ${canEdit ? `
                 <button onclick="event.stopPropagation(); window.franchise.editFranchise(${f.id})" class="text-green-600 hover:text-green-900">
                   <i class="fas fa-edit"></i>
                 </button>
+                ` : ''}
               </td>
             </tr>
           `).join('')}
