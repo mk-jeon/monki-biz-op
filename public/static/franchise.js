@@ -82,21 +82,20 @@
             type="text" 
             id="search-input" 
             placeholder="가맹점명, 사업자번호, 대표자, 연락처 검색"
-            class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            onkeypress="if(event.key==='Enter') window.franchise.search()">
+            class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
           
-          <select id="status-filter" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" onchange="window.franchise.filterStatus()">
+          <select id="status-filter" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
             <option value="">전체 상태</option>
             <option value="active">운영중</option>
             <option value="terminated">해지</option>
             <option value="suspended">일시중지</option>
           </select>
 
-          <select id="region-filter" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" onchange="window.franchise.filterRegion()">
+          <select id="region-filter" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
             <option value="">전체 지역</option>
           </select>
 
-          <button onclick="window.franchise.resetFilters()" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition">
+          <button id="reset-filters-btn" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition">
             <i class="fas fa-redo mr-2"></i>필터 초기화
           </button>
         </div>
@@ -138,6 +137,75 @@
     `;
 
     console.log('✅ HTML 구조 생성 완료');
+
+    // 필터 이벤트 리스너 등록
+    try {
+      // 검색 입력창 - 실시간 검색 + Enter 키 지원
+      const searchInput = document.getElementById('search-input');
+      if (searchInput) {
+        // 실시간 검색 (300ms 디바운스)
+        let searchTimeout;
+        searchInput.addEventListener('input', (e) => {
+          clearTimeout(searchTimeout);
+          searchTimeout = setTimeout(() => {
+            currentSearch = e.target.value.trim();
+            currentPage = 1;
+            loadList();
+          }, 300);
+        });
+        
+        // Enter 키 지원
+        searchInput.addEventListener('keypress', (e) => {
+          if (e.key === 'Enter') {
+            clearTimeout(searchTimeout);
+            currentSearch = e.target.value.trim();
+            currentPage = 1;
+            loadList();
+          }
+        });
+        console.log('✅ 검색 입력창 이벤트 리스너 등록 완료');
+      }
+
+      // 상태 필터
+      const statusFilter = document.getElementById('status-filter');
+      if (statusFilter) {
+        statusFilter.addEventListener('change', (e) => {
+          currentStatus = e.target.value;
+          currentPage = 1;
+          loadList();
+        });
+        console.log('✅ 상태 필터 이벤트 리스너 등록 완료');
+      }
+
+      // 지역 필터
+      const regionFilter = document.getElementById('region-filter');
+      if (regionFilter) {
+        regionFilter.addEventListener('change', (e) => {
+          currentRegion = e.target.value;
+          currentPage = 1;
+          loadList();
+        });
+        console.log('✅ 지역 필터 이벤트 리스너 등록 완료');
+      }
+
+      // 필터 초기화 버튼
+      const resetBtn = document.getElementById('reset-filters-btn');
+      if (resetBtn) {
+        resetBtn.addEventListener('click', () => {
+          document.getElementById('search-input').value = '';
+          document.getElementById('status-filter').value = '';
+          document.getElementById('region-filter').value = '';
+          currentSearch = '';
+          currentStatus = '';
+          currentRegion = '';
+          currentPage = 1;
+          loadList();
+        });
+        console.log('✅ 필터 초기화 버튼 이벤트 리스너 등록 완료');
+      }
+    } catch (error) {
+      console.error('❌ 필터 이벤트 리스너 등록 실패:', error);
+    }
 
     try {
       await loadStats();
