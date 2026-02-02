@@ -228,6 +228,70 @@ operations.post('/migrate', requireAuth, async (c) => {
   }
 });
 
+// 운영등재 수정
+operations.put('/:id', requireAuth, async (c) => {
+  try {
+    const user = c.get('user');
+    const id = c.req.param('id');
+    const data = await c.req.json();
+
+    const fields = [];
+    const bindings = [];
+
+    if (data.customer_name !== undefined) {
+      fields.push('customer_name = ?');
+      bindings.push(data.customer_name);
+    }
+    if (data.phone !== undefined) {
+      fields.push('phone = ?');
+      bindings.push(data.phone);
+    }
+    if (data.status !== undefined) {
+      fields.push('status = ?');
+      bindings.push(data.status);
+    }
+    if (data.memo !== undefined) {
+      fields.push('memo = ?');
+      bindings.push(data.memo);
+    }
+    if (data.contract_document_url !== undefined) {
+      fields.push('contract_document_url = ?');
+      bindings.push(data.contract_document_url);
+    }
+    if (data.install_certificate_url !== undefined) {
+      fields.push('install_certificate_url = ?');
+      bindings.push(data.install_certificate_url);
+    }
+    if (data.install_photo_url !== undefined) {
+      fields.push('install_photo_url = ?');
+      bindings.push(data.install_photo_url);
+    }
+    if (data.drive_url !== undefined) {
+      fields.push('drive_url = ?');
+      bindings.push(data.drive_url);
+    }
+
+    if (fields.length === 0) {
+      return c.json({ error: '수정할 데이터가 없습니다.' }, 400);
+    }
+
+    fields.push('updated_at = CURRENT_TIMESTAMP');
+    fields.push('updated_by = ?');
+    fields.push('updated_by_name = ?');
+    bindings.push(user.id, user.name, id);
+
+    await c.env.DB.prepare(`
+      UPDATE operations SET ${fields.join(', ')}
+      WHERE id = ?
+    `).bind(...bindings).run();
+
+    return c.json({ success: true });
+  } catch (error) {
+    console.error('Update operation error:', error);
+    return c.json({ error: '운영등재 수정 중 오류가 발생했습니다.' }, 500);
+  }
+});
+
 // 상태 변경 (드래그앤드롭용)
 operations.patch('/:id/status', requireAuth, async (c) => {
   try {

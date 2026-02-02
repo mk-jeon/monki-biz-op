@@ -725,6 +725,23 @@ async function loadDashboardData() {
     } catch (error) {
       console.log('Installation API not available yet');
     }
+    
+    // 운영등재 건수 조회
+    try {
+      const operationResponse = await axios.get('/api/operations?page=1&limit=1');
+      const operationCount = operationResponse.data.pagination?.total || 0;
+      
+      const operationElement = document.getElementById('operationCount');
+      if (operationElement) {
+        operationElement.textContent = operationCount;
+      }
+    } catch (error) {
+      console.log('Operation API not available yet');
+      const operationElement = document.getElementById('operationCount');
+      if (operationElement) {
+        operationElement.textContent = '0';
+      }
+    }
   } catch (error) {
     console.error('Dashboard data load error:', error);
     const consultingElement = document.getElementById('consultingCount');
