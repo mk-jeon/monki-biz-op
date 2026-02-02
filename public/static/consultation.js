@@ -17,11 +17,20 @@ function handleSort_consultation(field) {
  * 상담현황 페이지 로드
  */
 async function loadConsultationPage() {
-  // 드롭다운 항목 먼저 로드
+  // 드롭다운 항목 먼저 로드 및 캐시 저장
   await Promise.all([
-    loadDropdownItems('inflow_source').then(items => inflowSources = items),
-    loadDropdownItems('consultation_purpose').then(items => consultationPurposes = items),
-    loadDropdownItems('consultation_channel').then(items => consultationChannels = items)
+    loadDropdownItems('inflow_source').then(items => {
+      inflowSources = items;
+      itemCache['inflow_source'] = items; // 캐시에 저장
+    }),
+    loadDropdownItems('consultation_purpose').then(items => {
+      consultationPurposes = items;
+      itemCache['consultation_purpose'] = items;
+    }),
+    loadDropdownItems('consultation_channel').then(items => {
+      consultationChannels = items;
+      itemCache['consultation_channel'] = items;
+    })
   ]);
   
   // 리스트 모드로 시작
@@ -169,7 +178,7 @@ async function loadConsultationList(page = 1) {
                     </td>
                     <td class="px-4 py-3 text-sm text-gray-900">${item.customer_name || '-'}</td>
                     <td class="px-4 py-3 text-sm text-gray-900">${item.phone}</td>
-                    <td class="px-4 py-3 text-sm text-gray-600">${item.inflow_source || '-'}</td>
+                    <td class="px-4 py-3 text-sm text-gray-600">${getLabelByValue('inflow_source', item.inflow_source)}</td>
                     <td class="px-4 py-3">
                       <div class="flex space-x-1">
                         ${item.is_visit_consultation ? '<span class="bg-purple-100 text-purple-700 text-xs px-2 py-1 rounded">방문</span>' : ''}
@@ -643,7 +652,7 @@ async function showConsultationDetail(id) {
               </div>
               <div>
                 <p class="text-sm text-gray-600">유입경로</p>
-                <p class="font-semibold">${item.inflow_source || '-'}</p>
+                <p class="font-semibold">${getLabelByValue('inflow_source', item.inflow_source)}</p>
               </div>
               <div>
                 <p class="text-sm text-gray-600">등록일</p>

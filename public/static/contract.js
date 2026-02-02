@@ -72,8 +72,16 @@ console.log('🔵 contract.js 시작 - 파일 로딩 중...');
  */
 async function loadContractPage() {
   console.log('✅ loadContractPage 함수 호출됨');
-  // 드롭다운 항목 로드
-  await loadDropdownItems('contract_type').then(items => contractTypes = items);
+  // 드롭다운 항목 로드 및 캐시 저장
+  await Promise.all([
+    loadDropdownItems('contract_type').then(items => {
+      contractTypes = items;
+      itemCache['contract_type'] = items;
+    }),
+    loadDropdownItems('inflow_source').then(items => {
+      itemCache['inflow_source'] = items;
+    })
+  ]);
   console.log('✅ contractTypes 로드 완료');
   
   // 리스트 모드로 시작
@@ -185,7 +193,7 @@ async function loadContractList(page = 1) {
                     </td>
                     <td class="px-4 py-3 text-sm text-gray-900">${item.customer_name || '-'}</td>
                     <td class="px-4 py-3 text-sm text-gray-900">${item.phone}</td>
-                    <td class="px-4 py-3 text-sm text-gray-600">${item.inflow_source || '-'}</td>
+                    <td class="px-4 py-3 text-sm text-gray-600">${getLabelByValue('inflow_source', item.inflow_source)}</td>
                     <td class="px-4 py-3">
                       <div class="flex space-x-1">
                         ${item.pre_installation ? '<span class="bg-orange-100 text-orange-700 text-xs px-2 py-1 rounded">선설치</span>' : ''}
@@ -517,7 +525,7 @@ async function showContractDetail(id) {
               </div>
               <div>
                 <p class="text-sm text-gray-600">유입경로</p>
-                <p class="font-semibold">${item.inflow_source || '-'}</p>
+                <p class="font-semibold">${getLabelByValue('inflow_source', item.inflow_source)}</p>
               </div>
               <div>
                 <p class="text-sm text-gray-600">등록일</p>
@@ -701,7 +709,7 @@ function renderContractKanbanCard(item, config) {
       ${item.inflow_source ? `
         <div class="mb-2">
           <span class="inline-block bg-indigo-100 text-indigo-700 text-xs px-2 py-1 rounded">
-            ${item.inflow_source}
+            ${getLabelByValue('inflow_source', item.inflow_source)}
           </span>
         </div>
       ` : ''}

@@ -118,3 +118,38 @@ async function preloadAllItems() {
 function getItemsFromCache(categoryName) {
   return itemCache[categoryName] || [];
 }
+
+/**
+ * 영문 코드를 한글 라벨로 변환
+ * @param {string} categoryName - 카테고리 이름 (예: 'inflow_source')
+ * @param {string} value - 영문 코드 (예: 'CST_IN_0001')
+ * @returns {string} 한글 라벨 (예: '매장 방문') 또는 원본 값
+ */
+function getLabelByValue(categoryName, value) {
+  if (!value) return '-';
+  
+  const items = getItemsFromCache(categoryName);
+  const item = items.find(i => i.value === value);
+  
+  return item ? item.label : value;
+}
+
+/**
+ * 여러 카테고리에 대한 라벨 매핑 객체 생성
+ * @param {Array<string>} categoryNames - 카테고리 이름 배열
+ * @returns {Object} { categoryName: { value: label } } 형태의 매핑 객체
+ */
+function createLabelMap(categoryNames) {
+  const labelMap = {};
+  
+  categoryNames.forEach(categoryName => {
+    const items = getItemsFromCache(categoryName);
+    labelMap[categoryName] = {};
+    
+    items.forEach(item => {
+      labelMap[categoryName][item.value] = item.label;
+    });
+  });
+  
+  return labelMap;
+}
