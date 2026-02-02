@@ -93,7 +93,7 @@ operations.post('/', requireAuth, async (c) => {
   }
 });
 
-// 설치현황에서 운영등재로 이관
+// 설치현황에서 운영등재로 이관 (50개 컬럼 완전 복사)
 operations.post('/migrate', requireAuth, async (c) => {
   try {
     const user = c.get('user');
@@ -115,18 +115,99 @@ operations.post('/migrate', requireAuth, async (c) => {
           continue;
         }
 
+        // 50개 컬럼 완전 복사
         await c.env.DB.prepare(`
           INSERT INTO operations (
-            installation_id, customer_name, phone, status,
-            created_by, created_by_name
-          ) VALUES (?, ?, ?, 'contract_pending', ?, ?)
+            installation_id, customer_name, phone, status, inflow_source, memo,
+            created_by, created_by_name,
+            -- 기본 정보 (8개)
+            birth_date, email, business_number, representative,
+            road_address, detail_address, region, region_type,
+            -- 금융 정보 (9개)
+            bank_name, account_number, account_holder, contract_type,
+            withdrawal_day, monthly_rental_fee, deposit, contract_date, contract_number,
+            -- H/W: POS (7개)
+            pos_agency, pos_vendor, pos_model, pos_program,
+            asp_id, asp_password, asp_url,
+            -- H/W: 테이블오더 & 거치대 (6개)
+            table_order_qty, stand_standard, stand_flat, stand_extended,
+            charger_qty, battery_qty,
+            -- H/W: 네트워크 & 기타 (4개)
+            router_qty, kiosk_qty, kitchen_printer_qty, call_bell_qty,
+            -- 관리 정보 (2개)
+            crm_service, ai_sales_service
+          ) VALUES (
+            ?, ?, ?, 'contract_pending', ?, ?,
+            ?, ?,
+            ?, ?, ?, ?,
+            ?, ?, ?, ?,
+            ?, ?, ?, ?,
+            ?, ?, ?, ?, ?,
+            ?, ?, ?, ?,
+            ?, ?, ?,
+            ?, ?, ?, ?,
+            ?, ?,
+            ?, ?, ?, ?,
+            ?, ?
+          )
         `).bind(
           install.id,
           install.customer_name,
           install.phone,
+          install.inflow_source || '',
+          install.notes || '',
           user.id,
-          user.name
+          user.name,
+          // 기본 정보
+          install.birth_date || null,
+          install.email || null,
+          install.business_number || null,
+          install.representative || null,
+          install.road_address || null,
+          install.detail_address || null,
+          install.region || null,
+          install.region_type || null,
+          // 금융 정보
+          install.bank_name || null,
+          install.account_number || null,
+          install.account_holder || null,
+          install.contract_type || null,
+          install.withdrawal_day || null,
+          install.monthly_rental_fee || null,
+          install.deposit || null,
+          install.contract_date || null,
+          install.contract_number || null,
+          // H/W: POS
+          install.pos_agency || null,
+          install.pos_vendor || null,
+          install.pos_model || null,
+          install.pos_program || null,
+          install.asp_id || null,
+          install.asp_password || null,
+          install.asp_url || null,
+          // H/W: 테이블오더 & 거치대
+          install.table_order_qty || 0,
+          install.stand_standard || 0,
+          install.stand_flat || 0,
+          install.stand_extended || 0,
+          install.charger_qty || 0,
+          install.battery_qty || 0,
+          // H/W: 네트워크 & 기타
+          install.router_qty || 0,
+          install.kiosk_qty || 0,
+          install.kitchen_printer_qty || 0,
+          install.call_bell_qty || 0,
+          // 관리 정보
+          install.crm_service || 0,
+          install.ai_sales_service || 0
         ).run();
+
+        // 설치현황에 이관 플래그 설정
+        await c.env.DB.prepare(`
+          UPDATE installations 
+          SET migrated_to_operation = 1, migrated_at = CURRENT_TIMESTAMP
+          WHERE id = ?
+        `).bind(install.id).run();
 
         successCount++;
       } catch (err) {
