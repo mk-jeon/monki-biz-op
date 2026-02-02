@@ -1084,10 +1084,12 @@ async function migrateToInstallation(ids) {
       contract_ids: ids
     });
 
-    const { successCount, errorCount, errors } = response.data;
+    console.log('✅ 이관 API 응답:', response.data);
+    
+    const { success, successCount, errorCount, errors } = response.data;
 
-    // 성공한 건이 있으면 성공으로 처리
-    if (successCount > 0) {
+    // API 응답 성공 확인
+    if (success && successCount > 0) {
       let message = `이관 완료!\n성공: ${successCount}건`;
       if (errorCount > 0) {
         message += `\n실패: ${errorCount}건`;
@@ -1096,25 +1098,26 @@ async function migrateToInstallation(ids) {
         }
       }
       alert(message);
+      closeMigrateToInstallationModal();
+      
+      // 리스트 새로고침
+      if (currentContractViewMode === 'list') {
+        loadContractList(currentContractPage);
+      } else {
+        loadContractKanban();
+      }
     } else {
-      // 모두 실패한 경우만 에러
-      let message = `이관 실패\n실패: ${errorCount}건`;
+      // 모두 실패한 경우
+      let message = `이관 실패\n실패: ${errorCount || 0}건`;
       if (errors && errors.length > 0) {
         message += '\n\n에러:\n' + errors.join('\n');
       }
       alert(message);
-    }
-    
-    closeMigrateToInstallationModal();
-    
-    // 리스트 새로고침
-    if (currentContractViewMode === 'list') {
-      loadContractList(currentContractPage);
-    } else {
-      loadContractKanban();
+      closeMigrateToInstallationModal();
     }
   } catch (error) {
     console.error('❌ Migrate to installation error:', error);
+    console.error('에러 상세:', error.response);
     closeMigrateToInstallationModal();
     alert(error.response?.data?.error || '이관 중 오류가 발생했습니다.');
   }
