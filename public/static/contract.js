@@ -1098,14 +1098,6 @@ async function migrateToInstallation(ids) {
         }
       }
       alert(message);
-      closeMigrateToInstallationModal();
-      
-      // 리스트 새로고침
-      if (currentContractViewMode === 'list') {
-        loadContractList(currentContractPage);
-      } else {
-        loadContractKanban();
-      }
     } else {
       // 모두 실패한 경우
       let message = `이관 실패\n실패: ${errorCount || 0}건`;
@@ -1113,13 +1105,22 @@ async function migrateToInstallation(ids) {
         message += '\n\n에러:\n' + errors.join('\n');
       }
       alert(message);
-      closeMigrateToInstallationModal();
+    }
+    
+    // 모달 닫기 및 리스트 새로고침
+    closeMigrateToInstallationModal();
+    
+    // 리스트 새로고침
+    if (currentContractViewMode === 'list') {
+      loadContractList(currentContractPage);
+    } else {
+      loadContractKanban();
     }
   } catch (error) {
     console.error('❌ Migrate to installation error:', error);
     console.error('에러 상세:', error.response);
-    closeMigrateToInstallationModal();
     alert(error.response?.data?.error || '이관 중 오류가 발생했습니다.');
+    closeMigrateToInstallationModal();
   }
 }
 

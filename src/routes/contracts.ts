@@ -246,7 +246,19 @@ contracts.post('/migrate', requireAuth, async (c) => {
       } catch (error) {
         errorCount++;
         errors.push(`상담 ID ${consultationId}: ${error.message}`);
+        console.error(`Migrate consultation ${consultationId} error:`, error);
       }
+    }
+
+    // 모두 실패한 경우 400 에러 반환
+    if (successCount === 0 && errorCount > 0) {
+      return c.json({
+        success: false,
+        error: '모든 이관이 실패했습니다.',
+        successCount: 0,
+        errorCount,
+        errors: errors.slice(0, 10)
+      }, 400);
     }
 
     return c.json({

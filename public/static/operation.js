@@ -1028,38 +1028,36 @@ async function showOperationEditModal(id) {
           </form>
         </div>
       </div>
-      
-      <script>
-        // Tab 전환 함수
-        window.switchOperationTab = function(tabName) {
-          // 모든 탭 버튼 스타일 초기화
-          document.querySelectorAll('.operation-tab-btn').forEach(btn => {
-            btn.classList.remove('text-blue-600', 'border-blue-500');
-            btn.classList.add('text-gray-500', 'border-transparent');
-          });
-          
-          // 현재 탭 버튼 활성화
-          const activeBtn = document.querySelector(\`.operation-tab-btn[data-tab="\${tabName}"]\`);
-          if (activeBtn) {
-            activeBtn.classList.remove('text-gray-500', 'border-transparent');
-            activeBtn.classList.add('text-blue-600', 'border-blue-500');
-          }
-          
-          // 모든 탭 콘텐츠 숨기기
-          document.querySelectorAll('.operation-tab-content').forEach(content => {
-            content.classList.add('hidden');
-          });
-          
-          // 현재 탭 콘텐츠 표시
-          const activeContent = document.getElementById(\`operation-tab-\${tabName}\`);
-          if (activeContent) {
-            activeContent.classList.remove('hidden');
-          }
-        };
-      </script>
     `;
 
     document.body.insertAdjacentHTML('beforeend', modalHTML);
+
+    // Tab 전환 함수 등록 (모달 삽입 후 실행)
+    window.switchOperationTab = function(tabName) {
+      // 모든 탭 버튼 스타일 초기화
+      document.querySelectorAll('.operation-tab-btn').forEach(btn => {
+        btn.classList.remove('text-blue-600', 'border-blue-500');
+        btn.classList.add('text-gray-500', 'border-transparent');
+      });
+      
+      // 현재 탭 버튼 활성화
+      const activeBtn = document.querySelector(`.operation-tab-btn[data-tab="${tabName}"]`);
+      if (activeBtn) {
+        activeBtn.classList.remove('text-gray-500', 'border-transparent');
+        activeBtn.classList.add('text-blue-600', 'border-blue-500');
+      }
+      
+      // 모든 탭 콘텐츠 숨기기
+      document.querySelectorAll('.operation-tab-content').forEach(content => {
+        content.classList.add('hidden');
+      });
+      
+      // 현재 탭 콘텐츠 표시
+      const activeContent = document.getElementById(`operation-tab-${tabName}`);
+      if (activeContent) {
+        activeContent.classList.remove('hidden');
+      }
+    };
 
     // 폼 제출 이벤트
     document.getElementById('operationEditForm').addEventListener('submit', async (e) => {

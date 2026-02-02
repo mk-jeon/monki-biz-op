@@ -844,8 +844,7 @@ async function showInstallationForm(id) {
           </button>
         </div>
 
-        <form id="installationForm" class="space-y-4">
-          <!-- 기본 정보 -->
+        <form id="installationForm" class="space-y-4" onsubmit="return false;">\n          <!-- 기본 정보 -->
           <div class="grid grid-cols-2 gap-4">
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-2">고객명</label>
