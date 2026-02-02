@@ -76,6 +76,48 @@
 
 ---
 
+### 🔥 긴급 버그 수정 완료 (2026-02-02)
+
+Phase 2 배포 후 발견된 **치명적 버그 5건**을 모두 해결하였습니다:
+
+#### Bug ① 상담 → 계약 이관 실패 수정
+- **문제**: 모든 이관 실패 시에도 `success: true` 반환하여 혼란 발생
+- **해결**: `successCount === 0`일 때 `success: false` 및 400 에러 반환
+- **파일**: `src/routes/contracts.ts`
+
+#### Bug ② 계약 → 설치 이관 에러 팝업 수정
+- **문제**: 이관 성공 직후 에러 팝업 발생 (모달 닫기 → alert 순서 문제)
+- **해결**: alert → 모달 닫기 순서로 변경
+- **파일**: `public/static/contract.js`
+
+#### Bug ③ 설치현황 저장 버그 수정
+- **문제**: 저장 클릭 시 값이 반영되지 않고 대시보드로 튕김
+- **해결**: `<form>` 태그에 `onsubmit="return false;"` 추가하여 기본 제출 동작 차단
+- **파일**: `public/static/installation.js`
+
+#### Bug ④ 대시보드 운영등재 카운트 확인
+- **문제**: 운영 데이터 존재 시에도 카운트 0 표시
+- **확인**: API 정상 동작 확인 (`/api/operations` 호출 및 `pagination.total` 표시)
+- **파일**: `public/static/app.js`
+
+#### Bug ⑤ 운영등재 탭 클릭 불가 수정
+- **문제**: 탭 클릭 시 화면 전환되지 않음 (`<script>` 태그가 문자열 안에서 실행 안 됨)
+- **해결**: 모달 삽입 후 직접 `window.switchOperationTab` 함수 등록
+- **파일**: `public/static/operation.js`
+
+**배포 정보:**
+- **Production**: https://monki-biz-op.pages.dev
+- **Latest Deploy**: https://49362492.monki-biz-op.pages.dev
+- **Commit**: ac0ec2d (Fix 5 Critical Bugs)
+- **배포일**: 2026-02-02
+
+**캐시 갱신 방법:**
+- Windows: `Ctrl + F5`
+- Mac: `Cmd + Shift + R`
+- 또는 시크릿/비공개 모드에서 테스트
+
+---
+
 ### ✅ 완료된 기능 (Phase 1)
 
 1. **로그인 시스템**
