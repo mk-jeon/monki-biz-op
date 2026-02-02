@@ -29,12 +29,13 @@
   - Consultations (상담현황)
   - Contracts (계약현황)
   - Installations (설치현황)
-  - Operations (운영등재)
+  - Operations (운영등재) - **50개 컬럼** ⭐ Phase 2
   - Notices (공지사항)
   - Departments (부서)
-  - **ItemCategories (항목 카테고리)** ⭐ NEW
-  - **ItemValues (항목 값)** ⭐ NEW
+  - **ItemCategories (항목 카테고리)** ⭐ Phase 1
+  - **ItemValues (항목 값)** ⭐ Phase 1
 - **스토리지 서비스**: Cloudflare D1 (SQLite)
+- **데이터 확장**: Phase 2 완료 - 4개 주요 테이블에 **50개 업무 필수 컬럼** 추가 ⭐
 - **인증 방식**: 세션 기반 인증 (쿠키)
 
 ## 현재 구현된 기능
@@ -318,11 +319,26 @@ npm run deploy:prod
 - **기술 스택**: 
   - Backend: Hono + TypeScript
   - Frontend: Vanilla JS + TailwindCSS
-  - Database: Cloudflare D1 (SQLite)
+  - Database: Cloudflare D1 (SQLite) - **50-column expanded schema**
   - 인증: bcrypt + Session Cookie
 - **마지막 업데이트**: 2026-01-30
   
 ## 최근 업데이트 내역
+- **2026-02-02 (Phase 2)**: 
+  - ✅ **대규모 데이터 확장 완료** ⭐ Phase 2
+    - 50개 컬럼 스키마 확장 (Consultations, Contracts, Installations, Operations)
+    - 기본 정보 (8개): 생년월일, 이메일, 사업자번호, 대표자명, 도로명주소, 상세주소, 지역, 지역구분
+    - 금융 정보 (8-9개): 은행명, 계좌번호, 예금주, 계약유형, 출금일, 월렌탈료, 보증금, 계약일, 계약번호
+    - H/W POS (7개): POS 대리점, 제조사, 모델명, 프로그램, ASP ID/PW/URL
+    - H/W 테이블오더 (6개): 테이블오더 수량, 거치대(일반/평판/확장), 충전기, 배터리
+    - H/W 네트워크 (4개): 공유기, 키오스크, 주방프린터, 호출벨
+    - 관리 정보 (2-3개): CRM 서비스, AI매출업 서비스, 유입경로(Operations만)
+  - ✅ **데이터 이관 파이프라인 개선** ⭐
+    - 설치→운영 이관 시 50개 컬럼 완전 복사
+    - 데이터 유실 없는 완벽한 이관 구현
+  - ✅ 0026_phase2_schema_expansion.sql 마이그레이션 적용 (로컬/프로덕션)
+  - ✅ GitHub 및 Cloudflare Pages 배포 완료
+
 - **2026-01-30**: 
   - ✅ **항목 관리 시스템 완전 구현** ⭐
     - item_categories, item_values 테이블 생성
