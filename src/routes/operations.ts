@@ -254,6 +254,24 @@ operations.put('/:id', requireAuth, async (c) => {
       fields.push('memo = ?');
       bindings.push(data.memo);
     }
+    // Tab 5 증빙 자료 필드
+    if (data.contract_checked !== undefined) {
+      fields.push('contract_checked = ?');
+      bindings.push(data.contract_checked);
+    }
+    if (data.installation_cert_checked !== undefined) {
+      fields.push('installation_cert_checked = ?');
+      bindings.push(data.installation_cert_checked);
+    }
+    if (data.installation_photo_checked !== undefined) {
+      fields.push('installation_photo_checked = ?');
+      bindings.push(data.installation_photo_checked);
+    }
+    if (data.drive_url !== undefined) {
+      fields.push('drive_url = ?');
+      bindings.push(data.drive_url);
+    }
+    // 기존 URL 필드들 (하위 호환성)
     if (data.contract_document_url !== undefined) {
       fields.push('contract_document_url = ?');
       bindings.push(data.contract_document_url);
@@ -265,10 +283,6 @@ operations.put('/:id', requireAuth, async (c) => {
     if (data.install_photo_url !== undefined) {
       fields.push('install_photo_url = ?');
       bindings.push(data.install_photo_url);
-    }
-    if (data.drive_url !== undefined) {
-      fields.push('drive_url = ?');
-      bindings.push(data.drive_url);
     }
 
     if (fields.length === 0) {
@@ -334,6 +348,117 @@ operations.patch('/:id/status', requireAuth, async (c) => {
   } catch (error) {
     console.error('Update operation status error:', error);
     return c.json({ error: '상태 변경 중 오류가 발생했습니다.' }, 500);
+  }
+});
+
+// 운영등재 승인 (가맹점현황으로 이관)
+operations.post('/:id/approve', requireAuth, async (c) => {
+  try {
+    const user = c.get('user');
+    const id = c.req.param('id');
+
+    // 운영등재 정보 조회
+    const operation = await c.env.DB.prepare(
+      'SELECT * FROM operations WHERE id = ?'
+    ).bind(id).first();
+
+    if (!operation) {
+      return c.json({ error: '운영등재를 찾을 수 없습니다.' }, 404);
+    }
+
+    // 유효성 검사: Tab 5 증빙 데이터 체크
+    const validationErrors = [];
+    
+    if (!operation.contract_checked) {
+      validationErrors.push('계약서 작성 확인이 필요합니다.');
+    }
+    if (!operation.installation_cert_checked) {
+      validationErrors.push('설치확인서 확인이 필요합니다.');
+    }
+    if (!operation.installation_photo_checked) {
+      validationErrors.push('설치사진 확인이 필요합니다.');
+    }
+    if (!operation.drive_url || operation.drive_url.trim() === '') {
+      validationErrors.push('구글 드라이브 URL이 필요합니다.');
+    }
+
+    if (validationErrors.length > 0) {
+      return c.json({ 
+        error: '승인 조건을 충족하지 못했습니다.',
+        validationErrors 
+      }, 400);
+    }
+
+    // Franchises 테이블로 데이터 이관
+    await c.env.DB.prepare(`
+      INSERT INTO franchises (
+        franchise_name, business_number, representative, contact, email,
+        contract_date, installation_date, contract_number, operation_status,
+        region_type, region, road_address, detail_address,
+        bank_name, account_number, account_holder, contract_type, withdrawal_day, rental_fee_total,
+        model_name, to_count, stand_standard, stand_flat, stand_extended, charger_set, router, battery,
+        asp_id, asp_pw, asp_url,
+        notes, created_by, created_at
+      ) VALUES (
+        ?, ?, ?, ?, ?,
+        ?, ?, ?, 'active',
+        ?, ?, ?, ?,
+        ?, ?, ?, ?, ?, ?,
+        ?, ?, ?, ?, ?, ?, ?, ?,
+        ?, ?, ?,
+        ?, ?, CURRENT_TIMESTAMP
+      )
+    `).bind(
+      operation.customer_name || '',
+      operation.business_number || null,
+      operation.representative || null,
+      operation.phone || '',
+      operation.email || null,
+      operation.contract_date || null,
+      null, // installation_date
+      operation.contract_number || null,
+      operation.region_type || null,
+      operation.region || null,
+      operation.road_address || null,
+      operation.detail_address || null,
+      operation.bank_name || null,
+      operation.account_number || null,
+      operation.account_holder || null,
+      operation.contract_type || null,
+      operation.withdrawal_day || null,
+      operation.monthly_rental_fee || null,
+      operation.pos_model || null,
+      operation.table_order_qty || 0,
+      operation.stand_standard || 0,
+      operation.stand_flat || 0,
+      operation.stand_extended || 0,
+      operation.charger_qty || 0,
+      operation.router_qty || 0,
+      operation.battery_qty || 0,
+      operation.asp_id || null,
+      operation.asp_password || null,
+      operation.asp_url || null,
+      operation.memo || null,
+      user.id
+    ).run();
+
+    // Operations 상태 업데이트
+    await c.env.DB.prepare(`
+      UPDATE operations SET
+        status = 'completed',
+        updated_at = CURRENT_TIMESTAMP,
+        updated_by = ?,
+        updated_by_name = ?
+      WHERE id = ?
+    `).bind(user.id, user.name, id).run();
+
+    return c.json({ 
+      success: true,
+      message: '운영등재가 승인되어 가맹점현황으로 이관되었습니다.'
+    });
+  } catch (error) {
+    console.error('Operation approval error:', error);
+    return c.json({ error: '승인 처리 중 오류가 발생했습니다.' }, 500);
   }
 });
 

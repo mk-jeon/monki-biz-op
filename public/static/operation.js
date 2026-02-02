@@ -200,6 +200,9 @@ async function loadOperationList(page = 1) {
                       <button onclick="viewOperationDetail(${op.id})" class="text-blue-600 hover:text-blue-800 mr-3" title="상세보기">
                         <i class="fas fa-eye"></i>
                       </button>
+                      <button onclick="approveOperation(${op.id})" class="text-green-600 hover:text-green-800 mr-3" title="운영 확정">
+                        <i class="fas fa-check-circle"></i>
+                      </button>
                       <button onclick="deleteOperation(${op.id})" class="text-red-600 hover:text-red-800" title="삭제">
                         <i class="fas fa-trash"></i>
                       </button>
@@ -727,37 +730,49 @@ async function showOperationEditModal(id) {
               </select>
             </div>
 
-            <!-- 제출 서류 URL -->
+            <!-- 증빙 자료 (Tab 5 스타일) -->
             <div class="border-t pt-4">
-              <h4 class="font-semibold text-gray-700 mb-3">제출 서류 URL</h4>
-              <div class="space-y-3">
-                <div>
-                  <label class="block text-sm font-semibold text-gray-700 mb-2">
-                    <i class="fas fa-file-contract mr-1 text-red-600"></i>
-                    계약서 URL
+              <h4 class="font-semibold text-gray-700 mb-3">
+                <i class="fas fa-folder-open mr-2 text-purple-600"></i>
+                증빙 자료 확인
+              </h4>
+              <div class="space-y-4 bg-purple-50 p-4 rounded-lg">
+                <!-- 체크박스 3개 -->
+                <div class="space-y-3">
+                  <label class="flex items-center space-x-3 cursor-pointer">
+                    <input type="checkbox" id="editContractChecked" ${op.contract_checked ? 'checked' : ''} class="w-5 h-5 text-purple-600 border-gray-300 rounded focus:ring-purple-500">
+                    <span class="text-sm font-medium text-gray-800">
+                      <i class="fas fa-file-signature mr-2 text-red-600"></i>
+                      계약서 작성 완료
+                    </span>
                   </label>
-                  <input type="url" id="editContractUrl" value="${op.contract_document_url || ''}" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="https://...">
-                </div>
-                <div>
-                  <label class="block text-sm font-semibold text-gray-700 mb-2">
-                    <i class="fas fa-certificate mr-1 text-orange-600"></i>
-                    설치확인서 URL
+                  <label class="flex items-center space-x-3 cursor-pointer">
+                    <input type="checkbox" id="editCertChecked" ${op.installation_cert_checked ? 'checked' : ''} class="w-5 h-5 text-purple-600 border-gray-300 rounded focus:ring-purple-500">
+                    <span class="text-sm font-medium text-gray-800">
+                      <i class="fas fa-clipboard-check mr-2 text-orange-600"></i>
+                      설치확인서 확인 완료
+                    </span>
                   </label>
-                  <input type="url" id="editCertUrl" value="${op.install_certificate_url || ''}" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="https://...">
-                </div>
-                <div>
-                  <label class="block text-sm font-semibold text-gray-700 mb-2">
-                    <i class="fas fa-image mr-1 text-yellow-600"></i>
-                    설치사진 URL
+                  <label class="flex items-center space-x-3 cursor-pointer">
+                    <input type="checkbox" id="editPhotoChecked" ${op.installation_photo_checked ? 'checked' : ''} class="w-5 h-5 text-purple-600 border-gray-300 rounded focus:ring-purple-500">
+                    <span class="text-sm font-medium text-gray-800">
+                      <i class="fas fa-camera mr-2 text-yellow-600"></i>
+                      설치사진 확인 완료
+                    </span>
                   </label>
-                  <input type="url" id="editPhotoUrl" value="${op.install_photo_url || ''}" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="https://...">
                 </div>
-                <div>
+                
+                <!-- 구글 드라이브 URL -->
+                <div class="pt-3 border-t border-purple-200">
                   <label class="block text-sm font-semibold text-gray-700 mb-2">
                     <i class="fas fa-cloud mr-1 text-blue-600"></i>
-                    드라이브 URL
+                    구글 드라이브 URL <span class="text-red-500">*</span>
                   </label>
-                  <input type="url" id="editDriveUrl" value="${op.drive_url || ''}" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="https://...">
+                  <input type="url" id="editDriveUrl" value="${op.drive_url || ''}" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500" placeholder="https://drive.google.com/...">
+                  <p class="text-xs text-gray-500 mt-1">
+                    <i class="fas fa-info-circle mr-1"></i>
+                    모든 증빙 자료가 업로드된 구글 드라이브 폴더 링크를 입력하세요.
+                  </p>
                 </div>
               </div>
             </div>
@@ -812,9 +827,9 @@ async function updateOperation(id) {
       customer_name: document.getElementById('editCustomerName').value,
       phone: document.getElementById('editPhone').value,
       status: document.getElementById('editStatus').value,
-      contract_document_url: document.getElementById('editContractUrl').value || null,
-      install_certificate_url: document.getElementById('editCertUrl').value || null,
-      install_photo_url: document.getElementById('editPhotoUrl').value || null,
+      contract_checked: document.getElementById('editContractChecked').checked ? 1 : 0,
+      installation_cert_checked: document.getElementById('editCertChecked').checked ? 1 : 0,
+      installation_photo_checked: document.getElementById('editPhotoChecked').checked ? 1 : 0,
       drive_url: document.getElementById('editDriveUrl').value || null,
       memo: document.getElementById('editMemo').value || null
     };
@@ -864,6 +879,43 @@ async function confirmOperationComplete(id) {
 }
 
 /**
+ * 운영등재 승인 (가맹점현황으로 이관)
+ */
+async function approveOperation(id) {
+  if (!confirm('이 운영등재를 승인하여 가맹점현황으로 이관하시겠습니까?\n\n증빙 자료가 모두 완료되어야 승인됩니다.')) {
+    return;
+  }
+
+  try {
+    const response = await axios.post(`/api/operations/${id}/approve`);
+    
+    alert('✅ ' + response.data.message);
+    
+    // 리스트 새로고침
+    if (currentOperationViewMode === 'list') {
+      loadOperationList(currentOperationPage);
+    } else {
+      loadOperationKanban();
+    }
+  } catch (error) {
+    console.error('운영등재 승인 오류:', error);
+    
+    // 유효성 검사 에러 상세 표시
+    if (error.response?.data?.validationErrors) {
+      const errors = error.response.data.validationErrors;
+      let errorMessage = '❌ 승인 조건을 충족하지 못했습니다:\n\n';
+      errors.forEach((err, idx) => {
+        errorMessage += `${idx + 1}. ${err}\n`;
+      });
+      errorMessage += '\n증빙 자료를 모두 완료한 후 다시 시도해주세요.';
+      alert(errorMessage);
+    } else {
+      alert(error.response?.data?.error || '승인 처리 중 오류가 발생했습니다.');
+    }
+  }
+}
+
+/**
  * 운영등재 삭제
  */
 async function deleteOperation(id) {
@@ -894,6 +946,7 @@ window.showOperationEditModal = showOperationEditModal;
 window.closeOperationEditModal = closeOperationEditModal;
 window.updateOperation = updateOperation;
 window.confirmOperationComplete = confirmOperationComplete;
+window.approveOperation = approveOperation;
 window.deleteOperation = deleteOperation;
 window.handleDragStart_operation = handleDragStart_operation;
 window.handleDragEnd_operation = handleDragEnd_operation;
