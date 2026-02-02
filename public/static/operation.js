@@ -698,45 +698,282 @@ async function showOperationEditModal(id) {
 
     const modalHTML = `
       <div id="operationEditModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div class="bg-white rounded-lg p-8 max-w-3xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-          <h3 class="text-2xl font-bold mb-6 text-gray-800">
-            <i class="fas fa-edit mr-2 text-blue-600"></i>
-            운영등재 수정
-          </h3>
+        <div class="bg-white rounded-lg p-6 max-w-5xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+          <!-- 모달 헤더 -->
+          <div class="flex items-center justify-between mb-6 pb-4 border-b">
+            <h3 class="text-2xl font-bold text-gray-800">
+              <i class="fas fa-edit mr-2 text-blue-600"></i>
+              운영등재 수정
+            </h3>
+            <button onclick="closeOperationEditModal()" class="text-gray-400 hover:text-gray-600">
+              <i class="fas fa-times text-2xl"></i>
+            </button>
+          </div>
           
-          <form id="operationEditForm" class="space-y-6">
-            <!-- 기본 정보 -->
-            <div class="grid grid-cols-2 gap-4">
-              <div>
-                <label class="block text-sm font-semibold text-gray-700 mb-2">고객명</label>
-                <input type="text" id="editCustomerName" value="${op.customer_name || ''}" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" required>
-              </div>
-              <div>
-                <label class="block text-sm font-semibold text-gray-700 mb-2">전화번호</label>
-                <input type="tel" id="editPhone" value="${op.phone || ''}" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+          <!-- 5-Tab 네비게이션 -->
+          <div class="mb-6 border-b">
+            <nav class="flex space-x-2">
+              <button type="button" onclick="switchOperationTab('basic')" class="operation-tab-btn px-6 py-3 font-semibold text-sm transition border-b-2 border-blue-500 text-blue-600" data-tab="basic">
+                <i class="fas fa-user mr-2"></i>기본
+              </button>
+              <button type="button" onclick="switchOperationTab('finance')" class="operation-tab-btn px-6 py-3 font-semibold text-sm text-gray-500 hover:text-gray-700 transition border-b-2 border-transparent" data-tab="finance">
+                <i class="fas fa-won-sign mr-2"></i>금융
+              </button>
+              <button type="button" onclick="switchOperationTab('hardware')" class="operation-tab-btn px-6 py-3 font-semibold text-sm text-gray-500 hover:text-gray-700 transition border-b-2 border-transparent" data-tab="hardware">
+                <i class="fas fa-laptop mr-2"></i>H/W
+              </button>
+              <button type="button" onclick="switchOperationTab('manage')" class="operation-tab-btn px-6 py-3 font-semibold text-sm text-gray-500 hover:text-gray-700 transition border-b-2 border-transparent" data-tab="manage">
+                <i class="fas fa-cog mr-2"></i>관리
+              </button>
+              <button type="button" onclick="switchOperationTab('evidence')" class="operation-tab-btn px-6 py-3 font-semibold text-sm text-gray-500 hover:text-gray-700 transition border-b-2 border-transparent" data-tab="evidence">
+                <i class="fas fa-folder-open mr-2"></i>증빙
+              </button>
+            </nav>
+          </div>
+          
+          <form id="operationEditForm">
+            <!-- Tab 1: 기본 정보 -->
+            <div id="operation-tab-basic" class="operation-tab-content">
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-sm font-semibold text-gray-700 mb-2">고객명 <span class="text-red-500">*</span></label>
+                  <input type="text" id="editCustomerName" value="${op.customer_name || ''}" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" required>
+                </div>
+                <div>
+                  <label class="block text-sm font-semibold text-gray-700 mb-2">전화번호</label>
+                  <input type="tel" id="editPhone" value="${op.phone || ''}" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                  <label class="block text-sm font-semibold text-gray-700 mb-2">생년월일</label>
+                  <input type="date" id="editBirthDate" value="${op.birth_date || ''}" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                  <label class="block text-sm font-semibold text-gray-700 mb-2">이메일</label>
+                  <input type="email" id="editEmail" value="${op.email || ''}" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                  <label class="block text-sm font-semibold text-gray-700 mb-2">사업자번호</label>
+                  <input type="text" id="editBusinessNumber" value="${op.business_number || ''}" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                  <label class="block text-sm font-semibold text-gray-700 mb-2">대표자명</label>
+                  <input type="text" id="editRepresentative" value="${op.representative || ''}" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div class="col-span-2">
+                  <label class="block text-sm font-semibold text-gray-700 mb-2">도로명 주소</label>
+                  <input type="text" id="editRoadAddress" value="${op.road_address || ''}" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div class="col-span-2">
+                  <label class="block text-sm font-semibold text-gray-700 mb-2">상세 주소</label>
+                  <input type="text" id="editDetailAddress" value="${op.detail_address || ''}" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                  <label class="block text-sm font-semibold text-gray-700 mb-2">지역</label>
+                  <input type="text" id="editRegion" value="${op.region || ''}" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                  <label class="block text-sm font-semibold text-gray-700 mb-2">지역 구분</label>
+                  <input type="text" id="editRegionType" value="${op.region_type || ''}" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div class="col-span-2">
+                  <label class="block text-sm font-semibold text-gray-700 mb-2">상태</label>
+                  <select id="editStatus" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                    <option value="contract_pending" ${op.status === 'contract_pending' ? 'selected' : ''}>계약서 미진행</option>
+                    <option value="install_cert_pending" ${op.status === 'install_cert_pending' ? 'selected' : ''}>설치확인서 미진행</option>
+                    <option value="install_photo_pending" ${op.status === 'install_photo_pending' ? 'selected' : ''}>설치사진 미진행</option>
+                    <option value="drive_upload_pending" ${op.status === 'drive_upload_pending' ? 'selected' : ''}>드라이브 업로드 미진행</option>
+                    <option value="completed" ${op.status === 'completed' ? 'selected' : ''}>운영등재완료</option>
+                    <option value="cancelled" ${op.status === 'cancelled' ? 'selected' : ''}>취소</option>
+                  </select>
+                </div>
               </div>
             </div>
 
-            <!-- 상태 -->
-            <div>
-              <label class="block text-sm font-semibold text-gray-700 mb-2">상태</label>
-              <select id="editStatus" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
-                <option value="contract_pending" ${op.status === 'contract_pending' ? 'selected' : ''}>계약서 미진행</option>
-                <option value="install_cert_pending" ${op.status === 'install_cert_pending' ? 'selected' : ''}>설치확인서 미진행</option>
-                <option value="install_photo_pending" ${op.status === 'install_photo_pending' ? 'selected' : ''}>설치사진 미진행</option>
-                <option value="drive_upload_pending" ${op.status === 'drive_upload_pending' ? 'selected' : ''}>드라이브 업로드 미진행</option>
-                <option value="completed" ${op.status === 'completed' ? 'selected' : ''}>운영등재완료</option>
-                <option value="cancelled" ${op.status === 'cancelled' ? 'selected' : ''}>취소</option>
-              </select>
+            <!-- Tab 2: 금융 정보 -->
+            <div id="operation-tab-finance" class="operation-tab-content hidden">
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-sm font-semibold text-gray-700 mb-2">은행명</label>
+                  <input type="text" id="editBankName" value="${op.bank_name || ''}" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                  <label class="block text-sm font-semibold text-gray-700 mb-2">계좌번호</label>
+                  <input type="text" id="editAccountNumber" value="${op.account_number || ''}" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                  <label class="block text-sm font-semibold text-gray-700 mb-2">예금주</label>
+                  <input type="text" id="editAccountHolder" value="${op.account_holder || ''}" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                  <label class="block text-sm font-semibold text-gray-700 mb-2">계약 유형</label>
+                  <input type="text" id="editContractType" value="${op.contract_type || ''}" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                  <label class="block text-sm font-semibold text-gray-700 mb-2">출금일</label>
+                  <input type="number" id="editWithdrawalDay" value="${op.withdrawal_day || ''}" min="1" max="31" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                  <label class="block text-sm font-semibold text-gray-700 mb-2">월 렌탈료 (원)</label>
+                  <input type="number" id="editMonthlyRentalFee" value="${op.monthly_rental_fee || ''}" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                  <label class="block text-sm font-semibold text-gray-700 mb-2">보증금 (원)</label>
+                  <input type="number" id="editDeposit" value="${op.deposit || ''}" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                  <label class="block text-sm font-semibold text-gray-700 mb-2">계약일</label>
+                  <input type="date" id="editContractDate" value="${op.contract_date || ''}" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div class="col-span-2">
+                  <label class="block text-sm font-semibold text-gray-700 mb-2">계약 번호</label>
+                  <input type="text" id="editContractNumber" value="${op.contract_number || ''}" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                </div>
+              </div>
             </div>
 
-            <!-- 증빙 자료 (Tab 5 스타일) -->
-            <div class="border-t pt-4">
-              <h4 class="font-semibold text-gray-700 mb-3">
-                <i class="fas fa-folder-open mr-2 text-purple-600"></i>
-                증빙 자료 확인
-              </h4>
-              <div class="space-y-4 bg-purple-50 p-4 rounded-lg">
+            <!-- Tab 3: H/W 정보 -->
+            <div id="operation-tab-hardware" class="operation-tab-content hidden">
+              <div class="space-y-6">
+                <!-- POS 정보 -->
+                <div>
+                  <h4 class="font-semibold text-gray-700 mb-3 flex items-center">
+                    <i class="fas fa-desktop mr-2 text-purple-600"></i>
+                    POS 정보
+                  </h4>
+                  <div class="grid grid-cols-2 gap-4">
+                    <div>
+                      <label class="block text-sm font-semibold text-gray-700 mb-2">POS 대리점</label>
+                      <input type="text" id="editPosAgency" value="${op.pos_agency || ''}" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                      <label class="block text-sm font-semibold text-gray-700 mb-2">POS 제조사</label>
+                      <input type="text" id="editPosVendor" value="${op.pos_vendor || ''}" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                      <label class="block text-sm font-semibold text-gray-700 mb-2">POS 모델명</label>
+                      <input type="text" id="editPosModel" value="${op.pos_model || ''}" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                      <label class="block text-sm font-semibold text-gray-700 mb-2">POS 프로그램</label>
+                      <input type="text" id="editPosProgram" value="${op.pos_program || ''}" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                      <label class="block text-sm font-semibold text-gray-700 mb-2">ASP ID</label>
+                      <input type="text" id="editAspId" value="${op.asp_id || ''}" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                      <label class="block text-sm font-semibold text-gray-700 mb-2">ASP 비밀번호</label>
+                      <input type="password" id="editAspPassword" value="${op.asp_password || ''}" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div class="col-span-2">
+                      <label class="block text-sm font-semibold text-gray-700 mb-2">ASP URL</label>
+                      <input type="url" id="editAspUrl" value="${op.asp_url || ''}" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 테이블오더 & 거치대 -->
+                <div>
+                  <h4 class="font-semibold text-gray-700 mb-3 flex items-center">
+                    <i class="fas fa-tablet-alt mr-2 text-blue-600"></i>
+                    테이블오더 & 거치대
+                  </h4>
+                  <div class="grid grid-cols-3 gap-4">
+                    <div>
+                      <label class="block text-sm font-semibold text-gray-700 mb-2">테이블오더 수량</label>
+                      <input type="number" id="editTableOrderQty" value="${op.table_order_qty || 0}" min="0" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                      <label class="block text-sm font-semibold text-gray-700 mb-2">거치대 일반</label>
+                      <input type="number" id="editStandStandard" value="${op.stand_standard || 0}" min="0" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                      <label class="block text-sm font-semibold text-gray-700 mb-2">거치대 평판</label>
+                      <input type="number" id="editStandFlat" value="${op.stand_flat || 0}" min="0" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                      <label class="block text-sm font-semibold text-gray-700 mb-2">거치대 확장</label>
+                      <input type="number" id="editStandExtended" value="${op.stand_extended || 0}" min="0" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                      <label class="block text-sm font-semibold text-gray-700 mb-2">충전기</label>
+                      <input type="number" id="editChargerQty" value="${op.charger_qty || 0}" min="0" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                      <label class="block text-sm font-semibold text-gray-700 mb-2">배터리</label>
+                      <input type="number" id="editBatteryQty" value="${op.battery_qty || 0}" min="0" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 네트워크 & 기타 -->
+                <div>
+                  <h4 class="font-semibold text-gray-700 mb-3 flex items-center">
+                    <i class="fas fa-network-wired mr-2 text-green-600"></i>
+                    네트워크 & 기타 장비
+                  </h4>
+                  <div class="grid grid-cols-4 gap-4">
+                    <div>
+                      <label class="block text-sm font-semibold text-gray-700 mb-2">공유기</label>
+                      <input type="number" id="editRouterQty" value="${op.router_qty || 0}" min="0" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                      <label class="block text-sm font-semibold text-gray-700 mb-2">키오스크</label>
+                      <input type="number" id="editKioskQty" value="${op.kiosk_qty || 0}" min="0" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                      <label class="block text-sm font-semibold text-gray-700 mb-2">주방프린터</label>
+                      <input type="number" id="editKitchenPrinterQty" value="${op.kitchen_printer_qty || 0}" min="0" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                      <label class="block text-sm font-semibold text-gray-700 mb-2">호출벨</label>
+                      <input type="number" id="editCallBellQty" value="${op.call_bell_qty || 0}" min="0" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Tab 4: 관리 정보 -->
+            <div id="operation-tab-manage" class="operation-tab-content hidden">
+              <div class="space-y-4">
+                <div>
+                  <h4 class="font-semibold text-gray-700 mb-3 flex items-center">
+                    <i class="fas fa-cogs mr-2 text-indigo-600"></i>
+                    부가 서비스
+                  </h4>
+                  <div class="grid grid-cols-2 gap-4">
+                    <label class="flex items-center space-x-3 cursor-pointer p-4 border border-gray-300 rounded-lg hover:bg-gray-50">
+                      <input type="checkbox" id="editCrmService" ${op.crm_service ? 'checked' : ''} class="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                      <span class="text-sm font-medium text-gray-800">
+                        <i class="fas fa-chart-line mr-2 text-blue-600"></i>
+                        CRM 서비스
+                      </span>
+                    </label>
+                    <label class="flex items-center space-x-3 cursor-pointer p-4 border border-gray-300 rounded-lg hover:bg-gray-50">
+                      <input type="checkbox" id="editAiSalesService" ${op.ai_sales_service ? 'checked' : ''} class="w-5 h-5 text-purple-600 border-gray-300 rounded focus:ring-purple-500">
+                      <span class="text-sm font-medium text-gray-800">
+                        <i class="fas fa-robot mr-2 text-purple-600"></i>
+                        AI 매출 분석 서비스
+                      </span>
+                    </label>
+                  </div>
+                </div>
+                
+                <div>
+                  <label class="block text-sm font-semibold text-gray-700 mb-2">메모</label>
+                  <textarea id="editMemo" rows="6" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="추가 메모사항을 입력하세요...">${op.memo || ''}</textarea>
+                </div>
+              </div>
+            </div>
+
+            <!-- Tab 5: 증빙 자료 -->
+            <div id="operation-tab-evidence" class="operation-tab-content hidden">
+              <div class="space-y-4 bg-purple-50 p-6 rounded-lg">
+                <h4 class="font-semibold text-gray-700 mb-3 flex items-center">
+                  <i class="fas fa-folder-open mr-2 text-purple-600"></i>
+                  증빙 자료 확인
+                </h4>
                 <!-- 체크박스 3개 -->
                 <div class="space-y-3">
                   <label class="flex items-center space-x-3 cursor-pointer">
@@ -777,14 +1014,8 @@ async function showOperationEditModal(id) {
               </div>
             </div>
 
-            <!-- 메모 -->
-            <div>
-              <label class="block text-sm font-semibold text-gray-700 mb-2">메모</label>
-              <textarea id="editMemo" rows="3" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">${op.memo || ''}</textarea>
-            </div>
-
             <!-- 버튼 -->
-            <div class="flex justify-end space-x-3 pt-4 border-t">
+            <div class="flex justify-end space-x-3 pt-6 mt-6 border-t">
               <button type="button" onclick="closeOperationEditModal()" class="px-6 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 rounded-lg transition">
                 <i class="fas fa-times mr-2"></i>
                 취소
@@ -797,6 +1028,35 @@ async function showOperationEditModal(id) {
           </form>
         </div>
       </div>
+      
+      <script>
+        // Tab 전환 함수
+        window.switchOperationTab = function(tabName) {
+          // 모든 탭 버튼 스타일 초기화
+          document.querySelectorAll('.operation-tab-btn').forEach(btn => {
+            btn.classList.remove('text-blue-600', 'border-blue-500');
+            btn.classList.add('text-gray-500', 'border-transparent');
+          });
+          
+          // 현재 탭 버튼 활성화
+          const activeBtn = document.querySelector(\`.operation-tab-btn[data-tab="\${tabName}"]\`);
+          if (activeBtn) {
+            activeBtn.classList.remove('text-gray-500', 'border-transparent');
+            activeBtn.classList.add('text-blue-600', 'border-blue-500');
+          }
+          
+          // 모든 탭 콘텐츠 숨기기
+          document.querySelectorAll('.operation-tab-content').forEach(content => {
+            content.classList.add('hidden');
+          });
+          
+          // 현재 탭 콘텐츠 표시
+          const activeContent = document.getElementById(\`operation-tab-\${tabName}\`);
+          if (activeContent) {
+            activeContent.classList.remove('hidden');
+          }
+        };
+      </script>
     `;
 
     document.body.insertAdjacentHTML('beforeend', modalHTML);
@@ -824,14 +1084,63 @@ function closeOperationEditModal() {
 async function updateOperation(id) {
   try {
     const data = {
+      // 기본 정보
       customer_name: document.getElementById('editCustomerName').value,
       phone: document.getElementById('editPhone').value,
+      birth_date: document.getElementById('editBirthDate').value || null,
+      email: document.getElementById('editEmail').value || null,
+      business_number: document.getElementById('editBusinessNumber').value || null,
+      representative: document.getElementById('editRepresentative').value || null,
+      road_address: document.getElementById('editRoadAddress').value || null,
+      detail_address: document.getElementById('editDetailAddress').value || null,
+      region: document.getElementById('editRegion').value || null,
+      region_type: document.getElementById('editRegionType').value || null,
       status: document.getElementById('editStatus').value,
+      
+      // 금융 정보
+      bank_name: document.getElementById('editBankName').value || null,
+      account_number: document.getElementById('editAccountNumber').value || null,
+      account_holder: document.getElementById('editAccountHolder').value || null,
+      contract_type: document.getElementById('editContractType').value || null,
+      withdrawal_day: document.getElementById('editWithdrawalDay').value || null,
+      monthly_rental_fee: document.getElementById('editMonthlyRentalFee').value || null,
+      deposit: document.getElementById('editDeposit').value || null,
+      contract_date: document.getElementById('editContractDate').value || null,
+      contract_number: document.getElementById('editContractNumber').value || null,
+      
+      // H/W: POS
+      pos_agency: document.getElementById('editPosAgency').value || null,
+      pos_vendor: document.getElementById('editPosVendor').value || null,
+      pos_model: document.getElementById('editPosModel').value || null,
+      pos_program: document.getElementById('editPosProgram').value || null,
+      asp_id: document.getElementById('editAspId').value || null,
+      asp_password: document.getElementById('editAspPassword').value || null,
+      asp_url: document.getElementById('editAspUrl').value || null,
+      
+      // H/W: 테이블오더 & 거치대
+      table_order_qty: parseInt(document.getElementById('editTableOrderQty').value) || 0,
+      stand_standard: parseInt(document.getElementById('editStandStandard').value) || 0,
+      stand_flat: parseInt(document.getElementById('editStandFlat').value) || 0,
+      stand_extended: parseInt(document.getElementById('editStandExtended').value) || 0,
+      charger_qty: parseInt(document.getElementById('editChargerQty').value) || 0,
+      battery_qty: parseInt(document.getElementById('editBatteryQty').value) || 0,
+      
+      // H/W: 네트워크 & 기타
+      router_qty: parseInt(document.getElementById('editRouterQty').value) || 0,
+      kiosk_qty: parseInt(document.getElementById('editKioskQty').value) || 0,
+      kitchen_printer_qty: parseInt(document.getElementById('editKitchenPrinterQty').value) || 0,
+      call_bell_qty: parseInt(document.getElementById('editCallBellQty').value) || 0,
+      
+      // 관리 정보
+      crm_service: document.getElementById('editCrmService').checked ? 1 : 0,
+      ai_sales_service: document.getElementById('editAiSalesService').checked ? 1 : 0,
+      memo: document.getElementById('editMemo').value || null,
+      
+      // 증빙 자료
       contract_checked: document.getElementById('editContractChecked').checked ? 1 : 0,
       installation_cert_checked: document.getElementById('editCertChecked').checked ? 1 : 0,
       installation_photo_checked: document.getElementById('editPhotoChecked').checked ? 1 : 0,
-      drive_url: document.getElementById('editDriveUrl').value || null,
-      memo: document.getElementById('editMemo').value || null
+      drive_url: document.getElementById('editDriveUrl').value || null
     };
 
     await axios.put(`/api/operations/${id}`, data);

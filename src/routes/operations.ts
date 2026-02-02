@@ -254,6 +254,163 @@ operations.put('/:id', requireAuth, async (c) => {
       fields.push('memo = ?');
       bindings.push(data.memo);
     }
+    
+    // Phase 2: 기본 정보 (8개)
+    if (data.birth_date !== undefined) {
+      fields.push('birth_date = ?');
+      bindings.push(data.birth_date || null);
+    }
+    if (data.email !== undefined) {
+      fields.push('email = ?');
+      bindings.push(data.email || null);
+    }
+    if (data.business_number !== undefined) {
+      fields.push('business_number = ?');
+      bindings.push(data.business_number || null);
+    }
+    if (data.representative !== undefined) {
+      fields.push('representative = ?');
+      bindings.push(data.representative || null);
+    }
+    if (data.road_address !== undefined) {
+      fields.push('road_address = ?');
+      bindings.push(data.road_address || null);
+    }
+    if (data.detail_address !== undefined) {
+      fields.push('detail_address = ?');
+      bindings.push(data.detail_address || null);
+    }
+    if (data.region !== undefined) {
+      fields.push('region = ?');
+      bindings.push(data.region || null);
+    }
+    if (data.region_type !== undefined) {
+      fields.push('region_type = ?');
+      bindings.push(data.region_type || null);
+    }
+
+    // Phase 2: 금융 정보 (9개)
+    if (data.bank_name !== undefined) {
+      fields.push('bank_name = ?');
+      bindings.push(data.bank_name || null);
+    }
+    if (data.account_number !== undefined) {
+      fields.push('account_number = ?');
+      bindings.push(data.account_number || null);
+    }
+    if (data.account_holder !== undefined) {
+      fields.push('account_holder = ?');
+      bindings.push(data.account_holder || null);
+    }
+    if (data.contract_type !== undefined) {
+      fields.push('contract_type = ?');
+      bindings.push(data.contract_type || null);
+    }
+    if (data.withdrawal_day !== undefined) {
+      fields.push('withdrawal_day = ?');
+      bindings.push(data.withdrawal_day || null);
+    }
+    if (data.monthly_rental_fee !== undefined) {
+      fields.push('monthly_rental_fee = ?');
+      bindings.push(data.monthly_rental_fee || null);
+    }
+    if (data.deposit !== undefined) {
+      fields.push('deposit = ?');
+      bindings.push(data.deposit || null);
+    }
+    if (data.contract_date !== undefined) {
+      fields.push('contract_date = ?');
+      bindings.push(data.contract_date || null);
+    }
+    if (data.contract_number !== undefined) {
+      fields.push('contract_number = ?');
+      bindings.push(data.contract_number || null);
+    }
+
+    // Phase 2: H/W: POS (7개)
+    if (data.pos_agency !== undefined) {
+      fields.push('pos_agency = ?');
+      bindings.push(data.pos_agency || null);
+    }
+    if (data.pos_vendor !== undefined) {
+      fields.push('pos_vendor = ?');
+      bindings.push(data.pos_vendor || null);
+    }
+    if (data.pos_model !== undefined) {
+      fields.push('pos_model = ?');
+      bindings.push(data.pos_model || null);
+    }
+    if (data.pos_program !== undefined) {
+      fields.push('pos_program = ?');
+      bindings.push(data.pos_program || null);
+    }
+    if (data.asp_id !== undefined) {
+      fields.push('asp_id = ?');
+      bindings.push(data.asp_id || null);
+    }
+    if (data.asp_password !== undefined) {
+      fields.push('asp_password = ?');
+      bindings.push(data.asp_password || null);
+    }
+    if (data.asp_url !== undefined) {
+      fields.push('asp_url = ?');
+      bindings.push(data.asp_url || null);
+    }
+
+    // Phase 2: H/W: 테이블오더 & 거치대 (6개)
+    if (data.table_order_qty !== undefined) {
+      fields.push('table_order_qty = ?');
+      bindings.push(data.table_order_qty || 0);
+    }
+    if (data.stand_standard !== undefined) {
+      fields.push('stand_standard = ?');
+      bindings.push(data.stand_standard || 0);
+    }
+    if (data.stand_flat !== undefined) {
+      fields.push('stand_flat = ?');
+      bindings.push(data.stand_flat || 0);
+    }
+    if (data.stand_extended !== undefined) {
+      fields.push('stand_extended = ?');
+      bindings.push(data.stand_extended || 0);
+    }
+    if (data.charger_qty !== undefined) {
+      fields.push('charger_qty = ?');
+      bindings.push(data.charger_qty || 0);
+    }
+    if (data.battery_qty !== undefined) {
+      fields.push('battery_qty = ?');
+      bindings.push(data.battery_qty || 0);
+    }
+
+    // Phase 2: H/W: 네트워크 & 기타 (4개)
+    if (data.router_qty !== undefined) {
+      fields.push('router_qty = ?');
+      bindings.push(data.router_qty || 0);
+    }
+    if (data.kiosk_qty !== undefined) {
+      fields.push('kiosk_qty = ?');
+      bindings.push(data.kiosk_qty || 0);
+    }
+    if (data.kitchen_printer_qty !== undefined) {
+      fields.push('kitchen_printer_qty = ?');
+      bindings.push(data.kitchen_printer_qty || 0);
+    }
+    if (data.call_bell_qty !== undefined) {
+      fields.push('call_bell_qty = ?');
+      bindings.push(data.call_bell_qty || 0);
+    }
+
+    // Phase 2: 관리 정보 (2개)
+    if (data.crm_service !== undefined) {
+      fields.push('crm_service = ?');
+      bindings.push(data.crm_service || 0);
+    }
+    if (data.ai_sales_service !== undefined) {
+      fields.push('ai_sales_service = ?');
+      bindings.push(data.ai_sales_service || 0);
+    }
+    
     // Tab 5 증빙 자료 필드
     if (data.contract_checked !== undefined) {
       fields.push('contract_checked = ?');
