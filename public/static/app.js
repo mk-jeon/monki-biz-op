@@ -726,16 +726,18 @@ async function loadDashboardData() {
       console.log('Installation API not available yet');
     }
     
-    // 운영등재 건수 조회
+    // 운영등재 건수 조회 (전체 레코드 수)
     try {
       const operationResponse = await axios.get('/api/operations?page=1&limit=1');
       console.log('🔍 운영등재 API 응답:', operationResponse.data);
       
+      // 백엔드가 { data: [...], pagination: { total: N } } 형식으로 반환
       const operationCount = operationResponse.data.pagination?.total || 0;
-      console.log('📊 운영등재 카운트:', operationCount);
+      console.log('📊 운영등재 카운트 (전체):', operationCount);
       
       if (operationCount === 0) {
         console.error('⚠️ 운영등재 카운트가 0입니다. 전체 응답:', JSON.stringify(operationResponse.data, null, 2));
+        console.error('⚠️ pagination 객체:', operationResponse.data.pagination);
       }
       
       const operationElement = document.getElementById('operationCount');

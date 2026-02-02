@@ -999,16 +999,16 @@ async function showOperationEditModal(id) {
                   </label>
                 </div>
                 
-                <!-- 구글 드라이브 URL -->
+                <!-- 두레이 드라이브 (사업팀 전용) URL -->
                 <div class="pt-3 border-t border-purple-200">
                   <label class="block text-sm font-semibold text-gray-700 mb-2">
                     <i class="fas fa-cloud mr-1 text-blue-600"></i>
-                    구글 드라이브 URL <span class="text-red-500">*</span>
+                    두레이 드라이브 (사업팀 전용) URL <span class="text-red-500">*</span>
                   </label>
-                  <input type="url" id="editDriveUrl" value="${op.drive_url || ''}" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500" placeholder="https://drive.google.com/...">
+                  <input type="url" id="editDriveUrl" value="${op.drive_url || ''}" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500" placeholder="https://doo.dooray.com/...">
                   <p class="text-xs text-gray-500 mt-1">
                     <i class="fas fa-info-circle mr-1"></i>
-                    모든 증빙 자료가 업로드된 구글 드라이브 폴더 링크를 입력하세요.
+                    모든 증빙 자료가 업로드된 두레이 드라이브 (사업팀 전용) 폴더 링크를 입력하세요.
                   </p>
                 </div>
               </div>

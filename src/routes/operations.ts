@@ -412,22 +412,22 @@ operations.put('/:id', requireAuth, async (c) => {
       bindings.push(data.ai_sales_service || 0);
     }
     
-    // Tab 5 증빙 자료 필드
+    // Tab 5 증빙 자료 필드 - 체크박스는 명시적으로 1/0 변환
     if (data.contract_checked !== undefined) {
       fields.push('contract_checked = ?');
-      bindings.push(data.contract_checked);
+      bindings.push(data.contract_checked ? 1 : 0);
     }
     if (data.installation_cert_checked !== undefined) {
       fields.push('installation_cert_checked = ?');
-      bindings.push(data.installation_cert_checked);
+      bindings.push(data.installation_cert_checked ? 1 : 0);
     }
     if (data.installation_photo_checked !== undefined) {
       fields.push('installation_photo_checked = ?');
-      bindings.push(data.installation_photo_checked);
+      bindings.push(data.installation_photo_checked ? 1 : 0);
     }
     if (data.drive_url !== undefined) {
       fields.push('drive_url = ?');
-      bindings.push(data.drive_url);
+      bindings.push(data.drive_url || null);
     }
     // 기존 URL 필드들 (하위 호환성)
     if (data.contract_document_url !== undefined) {
@@ -537,7 +537,7 @@ operations.post('/:id/approve', requireAuth, async (c) => {
       validationErrors.push('설치사진 확인이 필요합니다.');
     }
     if (!operation.drive_url || operation.drive_url.trim() === '') {
-      validationErrors.push('구글 드라이브 URL이 필요합니다.');
+      validationErrors.push('두레이 드라이브 (사업팀 전용) URL이 필요합니다.');
     }
 
     if (validationErrors.length > 0) {
