@@ -349,6 +349,7 @@ app.get('/', async (c) => {
       <script src="/static/consultation.js?v=${BUILD_VERSION}"></script>
       <script src="/static/contract.js?v=${BUILD_VERSION}"></script>
       <script src="/static/installation.js?v=${BUILD_VERSION}"></script>
+      <script src="/static/installation-form.js?v=${BUILD_VERSION}"></script>
       <script src="/static/operation.js?v=${BUILD_VERSION}"></script>
       <script src="/static/user-management.js?v=${BUILD_VERSION}"></script>
       <script src="/static/app.js?v=${BUILD_VERSION}"></script>

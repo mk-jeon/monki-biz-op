@@ -12,6 +12,7 @@ operations.get('/', requireAuth, async (c) => {
     const limitNum = parseInt(limit);
     const offset = (pageNum - 1) * limitNum;
 
+    // 전체 목록 조회 (필터 제거)
     const { results } = await c.env.DB.prepare(`
       SELECT * FROM operations
       ORDER BY 

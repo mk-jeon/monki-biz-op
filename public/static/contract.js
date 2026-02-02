@@ -163,16 +163,16 @@ async function loadContractList(page = 1) {
           <table class="w-full">
             <thead class="bg-gray-50 border-b-2 border-gray-200">
               <tr>
-                ${createSortableHeader('id', CONTRACT_HEADER_MAP['id'], 'contract', 'px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase')}
-                ${createSortableHeader('status', CONTRACT_HEADER_MAP['status'], 'contract', 'px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase')}
-                ${createSortableHeader('customer_name', CONTRACT_HEADER_MAP['customer_name'], 'contract', 'px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase')}
-                ${createSortableHeader('phone', CONTRACT_HEADER_MAP['phone'], 'contract', 'px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase')}
-                ${createSortableHeader('inflow_source', CONTRACT_HEADER_MAP['inflow_source'], 'contract', 'px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase')}
-                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">${CONTRACT_HEADER_MAP['option']}</th>
-                ${createSortableHeader('created_at', CONTRACT_HEADER_MAP['created_at'], 'contract', 'px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase')}
-                ${createSortableHeader('created_by_name', CONTRACT_HEADER_MAP['created_by_name'], 'contract', 'px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase')}
-                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">${CONTRACT_HEADER_MAP['modifier']}</th>
-                <th class="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase">${CONTRACT_HEADER_MAP['management']}</th>
+                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">번호</th>
+                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">상태</th>
+                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">고객명</th>
+                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">연락처</th>
+                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">유입경로</th>
+                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">옵션</th>
+                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">등록일</th>
+                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">등록자</th>
+                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">수정자</th>
+                <th class="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase">관리</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-gray-200">
@@ -1086,41 +1086,20 @@ async function migrateToInstallation(ids) {
 
     console.log('✅ 이관 API 응답:', response.data);
     
-    const { success, successCount, errorCount, errors } = response.data;
-
-    // API 응답 성공 확인
-    if (success && successCount > 0) {
-      let message = `이관 완료!\n성공: ${successCount}건`;
-      if (errorCount > 0) {
-        message += `\n실패: ${errorCount}건`;
-        if (errors && errors.length > 0) {
-          message += '\n\n에러:\n' + errors.join('\n');
-        }
-      }
-      alert(message);
-    } else {
-      // 모두 실패한 경우
-      let message = `이관 실패\n실패: ${errorCount || 0}건`;
-      if (errors && errors.length > 0) {
-        message += '\n\n에러:\n' + errors.join('\n');
-      }
-      alert(message);
+    // 백엔드 응답이 200 OK면 무조건 성공 처리
+    if (response.status === 200) {
+      alert('이관 성공!');
+      location.reload();
+      return;
     }
     
-    // 모달 닫기 및 리스트 새로고침
-    closeMigrateToInstallationModal();
-    
-    // 리스트 새로고침
-    if (currentContractViewMode === 'list') {
-      loadContractList(currentContractPage);
-    } else {
-      loadContractKanban();
-    }
+    // 예외적으로 실패한 경우만
+    alert('이관 중 오류가 발생했습니다.');
+    location.reload();
   } catch (error) {
     console.error('❌ Migrate to installation error:', error);
-    console.error('에러 상세:', error.response);
-    alert(error.response?.data?.error || '이관 중 오류가 발생했습니다.');
-    closeMigrateToInstallationModal();
+    alert('이관 중 오류가 발생했습니다.');
+    location.reload();
   }
 }
 

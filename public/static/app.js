@@ -729,7 +729,14 @@ async function loadDashboardData() {
     // 운영등재 건수 조회
     try {
       const operationResponse = await axios.get('/api/operations?page=1&limit=1');
+      console.log('🔍 운영등재 API 응답:', operationResponse.data);
+      
       const operationCount = operationResponse.data.pagination?.total || 0;
+      console.log('📊 운영등재 카운트:', operationCount);
+      
+      if (operationCount === 0) {
+        console.error('⚠️ 운영등재 카운트가 0입니다. 전체 응답:', JSON.stringify(operationResponse.data, null, 2));
+      }
       
       const operationElement = document.getElementById('operationCount');
       if (operationElement) {

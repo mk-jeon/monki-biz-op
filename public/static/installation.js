@@ -844,7 +844,7 @@ async function showInstallationForm(id) {
           </button>
         </div>
 
-        <form id="installationForm" class="space-y-4" onsubmit="return false;">\n          <!-- 기본 정보 -->
+        <form id="installationForm" class="space-y-4" onsubmit="return false;" data-installation-id="${isEdit ? id : ''}">\n          <!-- 기본 정보 -->
           <div class="grid grid-cols-2 gap-4">
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-2">고객명</label>
@@ -1021,7 +1021,7 @@ async function showInstallationForm(id) {
 
           <!-- 버튼 -->
           <div class="flex space-x-2 pt-4">
-            <button type="submit" class="flex-1 bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 px-4 rounded-lg transition">
+            <button type="button" onclick="saveInstallation()" class="flex-1 bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 px-4 rounded-lg transition">
               <i class="fas fa-save mr-2"></i>
               ${isEdit ? '수정' : '등록'}
             </button>
@@ -1099,11 +1099,10 @@ async function showInstallationForm(id) {
         }
       }
 
-      // 폼 제출 핸들러
-      document.getElementById('installationForm').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        
-        const formData = new FormData(e.target);
+      // 저장 함수
+      window.saveInstallation = async function() {
+        const form = document.getElementById('installationForm');
+        const formData = new FormData(form);
         const data = {
           customer_name: formData.get('customer_name'),
           phone: formData.get('phone'),
@@ -1555,3 +1554,4 @@ window.filterInstallationArchive = filterInstallationArchive;
 window.loadInstallationArchiveData = loadInstallationArchiveData;
 
 console.log('✅ 이전 기록 검색 기능 추가됨');
+� 기능 추가됨');
