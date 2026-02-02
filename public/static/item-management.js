@@ -242,7 +242,7 @@
     return new Date(dateStr).toLocaleDateString('ko-KR');
   }
 
-  // 추가 모달 표시
+  // 추가 모달 표시 (코드 자동 생성)
   function showAddModal(categoryId, categoryLabel) {
     const modal = document.createElement('div');
     modal.id = 'item-modal';
@@ -251,19 +251,27 @@
       <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-md">
         <h3 class="text-xl font-bold text-gray-900 mb-4">항목 추가 - ${categoryLabel}</h3>
         
+        <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+          <div class="flex items-start">
+            <i class="fas fa-info-circle text-blue-600 mt-1 mr-2"></i>
+            <p class="text-sm text-blue-800">
+              <strong>자동 코드 생성:</strong> 한글명만 입력하면 영문 코드가 자동으로 생성됩니다.
+            </p>
+          </div>
+        </div>
+        
         <div class="space-y-4">
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">값 (영문코드)</label>
-            <input type="text" id="item-value" 
-                   class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                   placeholder="예: new_option">
-          </div>
-          
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">표시명 (한글)</label>
+            <label class="block text-sm font-medium text-gray-700 mb-1">
+              표시명 (한글) <span class="text-red-500">*</span>
+            </label>
             <input type="text" id="item-label" 
                    class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                   placeholder="예: 새 옵션">
+                   placeholder="예: 매장 방문"
+                   autofocus>
+            <p class="mt-1 text-xs text-gray-500">
+              드롭다운에 표시될 한글명을 입력하세요.
+            </p>
           </div>
           
           <div>
@@ -271,6 +279,9 @@
             <input type="number" id="item-sort" 
                    class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
                    value="0">
+            <p class="mt-1 text-xs text-gray-500">
+              숫자가 작을수록 먼저 표시됩니다. (기본값: 0)
+            </p>
           </div>
         </div>
 
@@ -283,7 +294,7 @@
           <button 
             class="px-4 py-2 text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition"
             onclick="window.itemManagement.saveNewValue(${categoryId})">
-            추가
+            <i class="fas fa-plus mr-2"></i>추가
           </button>
         </div>
       </div>
@@ -291,7 +302,7 @@
     document.body.appendChild(modal);
   }
 
-  // 수정 모달 표시
+  // 수정 모달 표시 (코드는 읽기 전용)
   function showEditModal(categoryId, valueId) {
     const values = currentValues[categoryId];
     const value = values.find(v => v.id === valueId);
@@ -307,17 +318,26 @@
         
         <div class="space-y-4">
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">값 (영문코드)</label>
+            <label class="block text-sm font-medium text-gray-700 mb-1">
+              값 (영문코드) <span class="text-xs text-gray-500">읽기 전용</span>
+            </label>
             <input type="text" id="item-value" 
-                   class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                   value="${value.value}">
+                   class="w-full px-3 py-2 border rounded-lg bg-gray-100 cursor-not-allowed"
+                   value="${value.value}"
+                   readonly>
+            <p class="mt-1 text-xs text-gray-500">
+              자동 생성된 코드는 수정할 수 없습니다.
+            </p>
           </div>
           
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">표시명 (한글)</label>
+            <label class="block text-sm font-medium text-gray-700 mb-1">
+              표시명 (한글) <span class="text-red-500">*</span>
+            </label>
             <input type="text" id="item-label" 
                    class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                   value="${value.label}">
+                   value="${value.label}"
+                   autofocus>
           </div>
           
           <div>
@@ -337,7 +357,7 @@
           <button 
             class="px-4 py-2 text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition"
             onclick="window.itemManagement.saveEditValue(${categoryId}, ${valueId})">
-            저장
+            <i class="fas fa-save mr-2"></i>저장
           </button>
         </div>
       </div>
@@ -351,26 +371,27 @@
     if (modal) modal.remove();
   }
 
-  // 새 항목 저장
+  // 새 항목 저장 (코드 자동 생성)
   async function saveNewValue(categoryId) {
-    const value = document.getElementById('item-value').value.trim();
     const label = document.getElementById('item-label').value.trim();
     const sort_order = parseInt(document.getElementById('item-sort').value) || 0;
 
-    if (!value || !label) {
-      alert('값과 표시명을 모두 입력해주세요.');
+    if (!label) {
+      alert('표시명을 입력해주세요.');
       return;
     }
 
     try {
-      await axios.post('/api/items/values', {
+      const response = await axios.post('/api/items/values', {
         category_id: categoryId,
-        value,
         label,
         sort_order
       });
 
-      alert('항목이 추가되었습니다.');
+      // 서버가 자동 생성한 코드 표시
+      const generatedCode = response.data.value;
+      alert(`항목이 추가되었습니다.\n자동 생성된 코드: ${generatedCode}`);
+      
       closeModal();
       await loadPage(currentPage);
     } catch (error) {
@@ -379,20 +400,19 @@
     }
   }
 
-  // 항목 수정 저장
+  // 항목 수정 저장 (코드는 수정 불가)
   async function saveEditValue(categoryId, valueId) {
-    const value = document.getElementById('item-value').value.trim();
     const label = document.getElementById('item-label').value.trim();
     const sort_order = parseInt(document.getElementById('item-sort').value) || 0;
 
-    if (!value || !label) {
-      alert('값과 표시명을 모두 입력해주세요.');
+    if (!label) {
+      alert('표시명을 입력해주세요.');
       return;
     }
 
     try {
+      // 코드(value)는 서버에 전송하지 않음 (읽기 전용)
       await axios.put(`/api/items/values/${valueId}`, {
-        value,
         label,
         sort_order
       });
