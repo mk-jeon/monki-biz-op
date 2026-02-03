@@ -278,13 +278,31 @@
       if (currentRegion) params.append('region', currentRegion);
 
       const response = await axios.get(`/api/franchises?${params}`);
-      const { franchises, pagination } = response.data;
+      console.log('✅ 가맹점 API 응답:', response.data);
+      
+      // 안전한 데이터 추출 (옵셔널 체이닝)
+      const franchises = response.data?.franchises || [];
+      const pagination = response.data?.pagination || { page: 1, totalPages: 1, total: 0 };
 
       renderList(franchises);
       renderPagination(pagination);
     } catch (error) {
       console.error('목록 로드 오류:', error);
-      alert('목록을 불러오는데 실패했습니다.');
+      console.error('에러 응답:', error.response?.data);
+      
+      const container = document.getElementById('franchise-list');
+      if (container) {
+        container.innerHTML = `
+          <div class="text-center py-8">
+            <i class="fas fa-exclamation-triangle text-red-500 text-4xl mb-4"></i>
+            <p class="text-red-600 font-semibold">데이터를 불러올 수 없습니다</p>
+            <p class="text-gray-600 mt-2">${error.response?.data?.error || error.message}</p>
+            <button onclick="window.franchise.loadList()" class="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+              다시 시도
+            </button>
+          </div>
+        `;
+      }
     }
   }
 

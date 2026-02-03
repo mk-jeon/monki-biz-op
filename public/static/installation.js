@@ -1,13 +1,13 @@
-// 설치현황 모듈 - IIFE로 스코프 격리
-(function() {
-  'use strict';
-  
-  console.log('🔵 installation.js 모듈 로드 시작 (Phase 3: 5-Tab UI)');
+// 설치현황 모듈 - 전역 함수로 재작성 (IIFE 제거)
+'use strict';
+
+console.log('🔵 installation.js 모듈 로드 시작 (전역 함수 버전)');
 
 /**
  * 날짜 포맷 함수
  */
-function formatDate(dateString) {
+function formatInstallationDate(dateString) {
+  if (!dateString) return '-';
   const utcDate = new Date(dateString);
   const kstDate = new Date(utcDate.getTime() + (9 * 60 * 60 * 1000));
   const now = new Date();
@@ -39,7 +39,9 @@ let installationTypes = []; // 설치유형 목록
  * 설치 정렬 처리 함수
  */
 function handleSort_installation(field) {
-  window.handleSort(field, 'installation', () => loadInstallationList(currentInstallationPage));
+  window.handleSort(field, 'installation', function() {
+    loadInstallationList(currentInstallationPage);
+  });
 }
 
 /**
@@ -47,8 +49,18 @@ function handleSort_installation(field) {
  */
 async function loadInstallationPage() {
   console.log('✅ loadInstallationPage 호출됨');
-  // 드롭다운 항목 로드
-  await loadDropdownItems('installation_type').then(items => installationTypes = items);
+  try {
+    // dropdown-helper.js의 전역 함수 사용
+    if (typeof loadDropdownItems === 'function') {
+      installationTypes = await loadDropdownItems('installation_type');
+      console.log('✅ installationTypes 로드 완료:', installationTypes.length);
+    } else {
+      console.warn('⚠️ loadDropdownItems 함수를 찾을 수 없습니다.');
+    }
+  } catch (error) {
+    console.error('드롭다운 로드 오류:', error);
+  }
+  
   loadInstallationList();
 }
 
@@ -68,15 +80,20 @@ function toggleInstallationViewMode() {
 /**
  * 설치현황 리스트 조회
  */
-async function loadInstallationList(page = 1) {
+async function loadInstallationList(page) {
+  page = page || 1;
   console.log(`✅ loadInstallationList 실행 (page=${page})`);
+  
   try {
     const response = await axios.get(`/api/installations?page=${page}&limit=50`);
-    let { installations, pagination } = response.data;
+    let installations = response.data.installations || [];
+    const pagination = response.data.pagination || { page: 1, totalPages: 1 };
     
     // 정렬 적용
-    const sortState = window.sortStates.installation;
-    installations = window.sortData(installations, sortState.field, sortState.order, 'installation');
+    if (window.sortStates && window.sortStates.installation) {
+      const sortState = window.sortStates.installation;
+      installations = window.sortData(installations, sortState.field, sortState.order, 'installation');
+    }
 
     const statusMap = {
       'waiting': { text: '설치대기', color: 'bg-gray-500', icon: 'fa-clock' },
@@ -118,16 +135,16 @@ async function loadInstallationList(page = 1) {
             <thead class="bg-gray-50">
               <tr>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100" onclick="handleSort_installation('id')">
-                  번호 ${window.renderSortIcon('installation', 'id')}
+                  번호 ${window.renderSortIcon ? window.renderSortIcon('installation', 'id') : ''}
                 </th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100" onclick="handleSort_installation('status')">
-                  상태 ${window.renderSortIcon('installation', 'status')}
+                  상태 ${window.renderSortIcon ? window.renderSortIcon('installation', 'status') : ''}
                 </th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">고객명</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">연락처</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">유입경로</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100" onclick="handleSort_installation('created_at')">
-                  등록일 ${window.renderSortIcon('installation', 'created_at')}
+                  등록일 ${window.renderSortIcon ? window.renderSortIcon('installation', 'created_at') : ''}
                 </th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">등록자</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">관리</th>
@@ -148,7 +165,7 @@ async function loadInstallationList(page = 1) {
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${inst.customer_name || '-'}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">${inst.phone || '-'}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">${inst.inflow_source || '-'}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${formatDate(inst.created_at)}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${formatInstallationDate(inst.created_at)}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">${inst.created_by_name || '-'}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm">
                       <div class="flex space-x-2">
@@ -169,7 +186,7 @@ async function loadInstallationList(page = 1) {
 
         <!-- 페이지네이션 -->
         <div class="p-6 border-t border-gray-200">
-          ${window.renderPagination(pagination.currentPage, pagination.totalPages, 'loadInstallationList')}
+          ${window.renderPagination ? window.renderPagination(pagination.page || pagination.currentPage, pagination.totalPages, 'loadInstallationList') : ''}
         </div>
       </div>
     `;
@@ -182,21 +199,13 @@ async function loadInstallationList(page = 1) {
       <div class="p-8 text-center text-red-600">
         <i class="fas fa-exclamation-triangle text-4xl mb-4"></i>
         <p>데이터를 불러오는 중 오류가 발생했습니다.</p>
+        <button onclick="loadInstallationList()" class="mt-4 bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-lg">
+          다시 시도
+        </button>
       </div>
     `;
   }
 }
-
-/**
- * ===============================================
- * Phase 3: 5-Tab 모달 구조 (설치현황)
- * ===============================================
- * Tab 1: 기본정보 (고객명, 연락처, 사업자번호, 대표자, 주소 등)
- * Tab 2: 금융정보 (은행, 계좌, 예금주, 계약유형, 출금일, 렌탈료 등)
- * Tab 3: H/W 정보 (POS, 테이블오더, 거치대, 네트워크 등)
- * Tab 4: 관리 (부가서비스, 메모)
- * Tab 5: 증빙 (계약서, 설치확인서, 설치사진, 두레이 드라이브 URL) ✅ 필수
- */
 
 /**
  * 설치 등록 폼 모달 (5-Tab)
@@ -206,7 +215,12 @@ function showInstallationFormModal() {
   modal.classList.remove('hidden');
   
   // 폼 초기화
-  document.getElementById('installationForm').reset();
+  const form = document.getElementById('installationForm');
+  if (form) {
+    form.reset();
+    delete form.dataset.id;
+    delete form.dataset.mode;
+  }
   document.getElementById('installationFormTitle').textContent = '설치 신규 등록';
   
   // Tab 1을 기본으로 활성화
@@ -226,8 +240,9 @@ async function showInstallationEditModal(id) {
     
     // 폼에 데이터 채우기
     document.getElementById('installationFormTitle').textContent = '설치 정보 수정';
-    document.getElementById('installationForm').dataset.id = id;
-    document.getElementById('installationForm').dataset.mode = 'edit';
+    const form = document.getElementById('installationForm');
+    form.dataset.id = id;
+    form.dataset.mode = 'edit';
     
     // Tab 1: 기본정보
     document.getElementById('customerName').value = inst.customer_name || '';
@@ -306,7 +321,7 @@ function createInstallationFormModal() {
               <i class="fas fa-tools mr-2 text-purple-600"></i>
               설치 신규 등록
             </h3>
-            <button onclick="closeInstallationFormModal()" class="text-gray-400 hover:text-gray-600 text-2xl">
+            <button onclick="closeInstallationFormModal()" type="button" class="text-gray-400 hover:text-gray-600 text-2xl">
               <i class="fas fa-times"></i>
             </button>
           </div>
@@ -331,8 +346,8 @@ function createInstallationFormModal() {
           </div>
         </div>
 
-        <!-- 모달 본문 -->
-        <form id="installationForm" class="p-6">
+        <!-- 모달 본문 - onsubmit 이벤트 완전 차단 -->
+        <form id="installationForm" class="p-6" onsubmit="return false;">
           
           <!-- Tab 1: 기본정보 -->
           <div id="installationTabContent1" class="installation-tab-content">
@@ -646,7 +661,7 @@ function createInstallationFormModal() {
           <button type="button" onclick="closeInstallationFormModal()" class="px-6 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 rounded-lg transition">
             취소
           </button>
-          <button type="button" onclick="saveInstallation()" class="px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition">
+          <button type="button" onclick="saveInstallation(event)" class="px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition">
             <i class="fas fa-save mr-2"></i>
             저장
           </button>
@@ -668,22 +683,29 @@ function switchInstallationTab(tabNumber) {
     const tabBtn = document.getElementById(`installationTab${i}`);
     const tabContent = document.getElementById(`installationTabContent${i}`);
     
-    if (i === tabNumber) {
-      tabBtn.classList.add('text-purple-600', 'border-b-2', 'border-purple-600', 'font-semibold');
-      tabBtn.classList.remove('text-gray-600');
-      tabContent.classList.remove('hidden');
-    } else {
-      tabBtn.classList.remove('text-purple-600', 'border-b-2', 'border-purple-600', 'font-semibold');
-      tabBtn.classList.add('text-gray-600');
-      tabContent.classList.add('hidden');
+    if (tabBtn && tabContent) {
+      if (i === tabNumber) {
+        tabBtn.classList.add('text-purple-600', 'border-b-2', 'border-purple-600', 'font-semibold');
+        tabBtn.classList.remove('text-gray-600');
+        tabContent.classList.remove('hidden');
+      } else {
+        tabBtn.classList.remove('text-purple-600', 'border-b-2', 'border-purple-600', 'font-semibold');
+        tabBtn.classList.add('text-gray-600');
+        tabContent.classList.add('hidden');
+      }
     }
   }
 }
 
 /**
- * 저장 버튼 핸들러 (type="button" + onclick)
+ * 저장 버튼 핸들러 (CRITICAL: preventDefault 명시적 호출)
  */
-async function saveInstallation() {
+async function saveInstallation(e) {
+  // CRITICAL: 폼 제출 이벤트 차단
+  if (e && e.preventDefault) {
+    e.preventDefault();
+  }
+  
   const form = document.getElementById('installationForm');
   const mode = form.dataset.mode || 'create';
   const id = form.dataset.id;
@@ -754,12 +776,17 @@ async function saveInstallation() {
     
     alert('저장완료');
     closeInstallationFormModal();
+    
+    // CRITICAL: 제자리 새로고침 (대시보드로 리다이렉트 금지)
     loadInstallationList(currentInstallationPage);
     
   } catch (error) {
     console.error('저장 오류:', error);
     alert('저장 중 오류가 발생했습니다: ' + (error.response?.data?.error || error.message));
   }
+  
+  // CRITICAL: 항상 false 반환하여 폼 제출 차단
+  return false;
 }
 
 /**
@@ -769,16 +796,17 @@ function closeInstallationFormModal() {
   const modal = document.getElementById('installationFormModal');
   if (modal) {
     modal.classList.add('hidden');
-    document.getElementById('installationForm').reset();
-    delete document.getElementById('installationForm').dataset.id;
-    delete document.getElementById('installationForm').dataset.mode;
+    const form = document.getElementById('installationForm');
+    if (form) {
+      form.reset();
+      delete form.dataset.id;
+      delete form.dataset.mode;
+    }
   }
 }
 
 /**
- * ===============================================
  * 운영등재 이관 모달 (설치 → 운영)
- * ===============================================
  */
 function showMigrateToOperationModal() {
   const selectedIds = Array.from(document.querySelectorAll('input[name="installationSelect"]:checked'))
@@ -826,12 +854,15 @@ async function executeMigrateToOperation(ids) {
       installation_ids: ids
     });
     
-    const { success, successCount, errorCount, errors } = response.data;
+    const result = response.data || {};
+    const successCount = result.successCount || 0;
+    const errorCount = result.errorCount || 0;
+    const errors = result.errors || [];
     
-    if (success && successCount > 0) {
+    if (successCount > 0) {
       let msg = `이관 완료! 성공: ${successCount}건`;
       if (errorCount > 0) {
-        msg += `, 실패: ${errorCount}건\n\n실패 사유:\n${errors.map(e => `- ${e.id}: ${e.error}`).join('\n')}`;
+        msg += `\n실패: ${errorCount}건\n\n실패 사유:\n${errors.map(e => `- ${e.id}: ${e.error}`).join('\n')}`;
       }
       alert(msg);
     } else {
@@ -839,6 +870,8 @@ async function executeMigrateToOperation(ids) {
     }
     
     closeMigrateToOperationModal();
+    
+    // CRITICAL: 제자리 새로고침 (대시보드로 리다이렉트 금지)
     loadInstallationList(currentInstallationPage);
     
   } catch (error) {
@@ -848,15 +881,13 @@ async function executeMigrateToOperation(ids) {
 }
 
 /**
- * ===============================================
  * 칸반 뷰 (간략 버전)
- * ===============================================
  */
 async function loadInstallationKanban() {
   console.log('✅ loadInstallationKanban 실행');
   try {
     const response = await axios.get('/api/installations?page=1&limit=1000');
-    const installations = response.data.installations;
+    const installations = response.data.installations || [];
 
     const statusGroups = {
       'waiting': { text: '설치대기', color: 'bg-gray-500', items: [] },
@@ -910,9 +941,7 @@ async function loadInstallationKanban() {
 }
 
 /**
- * ===============================================
  * 상세 모달 (간략 버전)
- * ===============================================
  */
 async function showInstallationDetailModal(id) {
   try {
@@ -927,7 +956,7 @@ async function showInstallationDetailModal(id) {
               <i class="fas fa-tools mr-2 text-purple-600"></i>
               설치 상세
             </h3>
-            <button onclick="closeInstallationDetailModal()" class="text-gray-400 hover:text-gray-600 text-2xl">
+            <button onclick="closeInstallationDetailModal()" type="button" class="text-gray-400 hover:text-gray-600 text-2xl">
               <i class="fas fa-times"></i>
             </button>
           </div>
@@ -938,7 +967,7 @@ async function showInstallationDetailModal(id) {
             <p><strong>상태:</strong> ${inst.status || '-'}</p>
           </div>
           <div class="flex justify-end space-x-3 mt-6">
-            <button onclick="closeInstallationDetailModal()" class="px-6 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 rounded-lg transition">
+            <button onclick="closeInstallationDetailModal()" type="button" class="px-6 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 rounded-lg transition">
               닫기
             </button>
           </div>
@@ -960,9 +989,7 @@ function closeInstallationDetailModal() {
 }
 
 /**
- * ===============================================
  * 삭제
- * ===============================================
  */
 async function deleteInstallation(id) {
   if (!confirm('정말 삭제하시겠습니까?')) return;
@@ -978,22 +1005,13 @@ async function deleteInstallation(id) {
 }
 
 /**
- * ===============================================
  * 이전 기록 검색 모달 (간략)
- * ===============================================
  */
 function showInstallationArchiveSearchModal() {
   alert('이전 기록 검색 기능은 준비 중입니다.');
 }
 
-/**
- * ===============================================
- * 드롭다운 항목 로드 (dropdown-helper.js의 전역 함수 사용)
- * ===============================================
- * 주의: loadDropdownItems는 dropdown-helper.js에서 전역으로 정의되어 있음
- */
-
-// 윈도우 바인딩 (CRITICAL: loadInstallationPage 추가)
+// 윈도우 바인딩 (전역 함수로 노출)
 window.loadInstallationPage = loadInstallationPage;
 window.loadInstallationList = loadInstallationList;
 window.loadInstallationKanban = loadInstallationKanban;
@@ -1012,6 +1030,4 @@ window.executeMigrateToOperation = executeMigrateToOperation;
 window.showInstallationArchiveSearchModal = showInstallationArchiveSearchModal;
 window.handleSort_installation = handleSort_installation;
 
-console.log('✅ installation.js 모듈 로드 완료 (Phase 3: 5-Tab UI)');
-
-})();
+console.log('✅ installation.js 모듈 로드 완료 (전역 함수 버전)');

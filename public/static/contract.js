@@ -1092,17 +1092,24 @@ async function migrateToInstallation(ids) {
     // 백엔드 응답이 200 OK면 무조건 성공 처리
     if (response.status === 200) {
       alert('이관 성공!');
-      location.reload();
+      closeMigrateToInstallationModal();
+      
+      // CRITICAL: 제자리 새로고침 (대시보드 리다이렉트 금지)
+      if (currentContractViewMode === 'list') {
+        loadContractList(currentContractPage);
+      } else {
+        loadContractKanban();
+      }
       return;
     }
     
     // 예외적으로 실패한 경우만
     alert('이관 중 오류가 발생했습니다.');
-    location.reload();
+    closeMigrateToInstallationModal();
   } catch (error) {
     console.error('❌ Migrate to installation error:', error);
     alert('이관 중 오류가 발생했습니다.');
-    location.reload();
+    closeMigrateToInstallationModal();
   }
 }
 
