@@ -174,11 +174,11 @@ async function loadInstallationList(page = 1) {
       </div>
     `;
     
-    document.getElementById('contentArea').innerHTML = content;
+    document.getElementById('mainContent').innerHTML = content;
     currentInstallationPage = page;
   } catch (error) {
     console.error('설치 목록 로드 오류:', error);
-    document.getElementById('contentArea').innerHTML = `
+    document.getElementById('mainContent').innerHTML = `
       <div class="p-8 text-center text-red-600">
         <i class="fas fa-exclamation-triangle text-4xl mb-4"></i>
         <p>데이터를 불러오는 중 오류가 발생했습니다.</p>
@@ -902,7 +902,7 @@ async function loadInstallationKanban() {
       </div>
     `;
     
-    document.getElementById('contentArea').innerHTML = content;
+    document.getElementById('mainContent').innerHTML = content;
     
   } catch (error) {
     console.error('칸반 로드 오류:', error);
@@ -1001,7 +1001,7 @@ async function loadDropdownItems(category) {
   }
 }
 
-// 윈도우 바인딩
+// 윈도우 바인딩 (CRITICAL: loadInstallationPage 추가)
 window.loadInstallationPage = loadInstallationPage;
 window.loadInstallationList = loadInstallationList;
 window.loadInstallationKanban = loadInstallationKanban;
