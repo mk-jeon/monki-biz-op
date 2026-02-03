@@ -14,6 +14,33 @@ function handleSort_consultation(field) {
 }
 
 /**
+ * 날짜 포맷 함수
+ */
+function formatDate(dateString) {
+  const utcDate = new Date(dateString);
+  const kstDate = new Date(utcDate.getTime() + (9 * 60 * 60 * 1000));
+  const now = new Date();
+  const diff = now - kstDate;
+  const diffHours = Math.floor(diff / (1000 * 60 * 60));
+  const diffDays = Math.floor(diff / (1000 * 60 * 60 * 24));
+
+  if (diffHours < 1) {
+    return '방금 전';
+  } else if (diffHours < 24) {
+    return `${diffHours}시간 전`;
+  } else if (diffDays < 7) {
+    return `${diffDays}일 전`;
+  } else {
+    return kstDate.toLocaleDateString('ko-KR', { 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric',
+      timeZone: 'Asia/Seoul'
+    });
+  }
+}
+
+/**
  * 상담현황 페이지 로드
  */
 async function loadConsultationPage() {
@@ -163,7 +190,7 @@ async function loadConsultationList(page = 1) {
             <tbody class="divide-y divide-gray-200">
               ${consultations.length === 0 ? `
                 <tr>
-                  <td colspan="9" class="px-4 py-8 text-center text-gray-500">
+                  <td colspan="10" class="px-4 py-8 text-center text-gray-500">
                     <i class="fas fa-inbox text-4xl mb-4"></i>
                     <p>등록된 상담이 없습니다.</p>
                   </td>
@@ -171,7 +198,7 @@ async function loadConsultationList(page = 1) {
               ` : consultations.map(item => {
                 const status = statusMap[item.status] || statusMap['waiting'];
                 return `
-                  <tr class="hover:bg-gray-50 cursor-pointer" onclick="showConsultationDetail(${item.id})">
+                  <tr class="hover:bg-gray-50 cursor-pointer" onclick="viewConsultationDetail(${item.id})">
                     <td class="px-4 py-3 text-sm font-medium text-gray-900">${item.id}</td>
                     <td class="px-4 py-3">
                       <span class="${status.color} text-white text-xs px-2 py-1 rounded">${status.text}</span>
@@ -189,7 +216,7 @@ async function loadConsultationList(page = 1) {
                     <td class="px-4 py-3 text-sm text-gray-600">${item.created_by_name}</td>
                     <td class="px-4 py-3 text-sm text-gray-600">${item.updated_by_name || '-'}</td>
                     <td class="px-4 py-3 text-center">
-                      <button onclick="event.stopPropagation(); showConsultationForm(${item.id})" class="text-blue-600 hover:text-blue-800 mr-2">
+                      <button onclick="event.stopPropagation(); showConsultationEditModal(${item.id})" class="text-blue-600 hover:text-blue-800 mr-2">
                         <i class="fas fa-edit"></i>
                       </button>
                       <button onclick="event.stopPropagation(); deleteConsultation(${item.id})" class="text-red-600 hover:text-red-800">
@@ -235,13 +262,369 @@ async function loadConsultationList(page = 1) {
 }
 
 /**
+ * 상담 상세 보기 (operation.js와 동일한 5-Tab 모달 구조)
+ */
+async function viewConsultationDetail(id) {
+  try {
+    const response = await axios.get(`/api/consultations/${id}`);
+    const item = response.data.consultation;
+
+    const statusMap = {
+      'waiting': '상담대기',
+      'in_progress': '상담중',
+      'hold': '보류',
+      'completed': '계약확정',
+      'cancelled': '취소'
+    };
+
+    const modalHTML = `
+      <div id="consultationDetailModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg p-6 max-w-5xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+          <!-- 모달 헤더 -->
+          <div class="flex items-center justify-between mb-6 pb-4 border-b">
+            <h3 class="text-2xl font-bold text-gray-800">
+              <i class="fas fa-info-circle mr-2 text-blue-600"></i>
+              상담 상세 정보
+            </h3>
+            <button onclick="closeConsultationDetailModal()" class="text-gray-400 hover:text-gray-600">
+              <i class="fas fa-times text-2xl"></i>
+            </button>
+          </div>
+          
+          <!-- 5-Tab 네비게이션 -->
+          <div class="mb-6 border-b">
+            <nav class="flex space-x-2">
+              <button type="button" onclick="switchConsultationDetailTab('basic')" class="consultation-detail-tab-btn px-6 py-3 font-semibold text-sm transition border-b-2 border-blue-500 text-blue-600" data-tab="basic">
+                <i class="fas fa-user mr-2"></i>기본
+              </button>
+              <button type="button" onclick="switchConsultationDetailTab('finance')" class="consultation-detail-tab-btn px-6 py-3 font-semibold text-sm text-gray-500 hover:text-gray-700 transition border-b-2 border-transparent" data-tab="finance">
+                <i class="fas fa-won-sign mr-2"></i>금융
+              </button>
+              <button type="button" onclick="switchConsultationDetailTab('hardware')" class="consultation-detail-tab-btn px-6 py-3 font-semibold text-sm text-gray-500 hover:text-gray-700 transition border-b-2 border-transparent" data-tab="hardware">
+                <i class="fas fa-laptop mr-2"></i>H/W
+              </button>
+              <button type="button" onclick="switchConsultationDetailTab('manage')" class="consultation-detail-tab-btn px-6 py-3 font-semibold text-sm text-gray-500 hover:text-gray-700 transition border-b-2 border-transparent" data-tab="manage">
+                <i class="fas fa-cog mr-2"></i>관리
+              </button>
+              <button type="button" onclick="switchConsultationDetailTab('evidence')" class="consultation-detail-tab-btn px-6 py-3 font-semibold text-sm text-gray-500 hover:text-gray-700 transition border-b-2 border-transparent" data-tab="evidence">
+                <i class="fas fa-folder-open mr-2"></i>증빙
+              </button>
+            </nav>
+          </div>
+          
+          <!-- Tab 1: 기본 정보 -->
+          <div id="consultation-detail-tab-basic" class="consultation-detail-tab-content">
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="text-sm font-semibold text-gray-600">고객명</label>
+                <p class="text-gray-800">${item.customer_name || '-'}</p>
+              </div>
+              <div>
+                <label class="text-sm font-semibold text-gray-600">전화번호</label>
+                <p class="text-gray-800">${item.phone || '-'}</p>
+              </div>
+              <div>
+                <label class="text-sm font-semibold text-gray-600">상태</label>
+                <p class="text-gray-800">${statusMap[item.status] || item.status}</p>
+              </div>
+              <div>
+                <label class="text-sm font-semibold text-gray-600">유입경로</label>
+                <p class="text-gray-800">${item.inflow_source || '-'}</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tab 2: 금융 정보 -->
+          <div id="consultation-detail-tab-finance" class="consultation-detail-tab-content hidden">
+            <p class="text-gray-500">금융 정보가 없습니다.</p>
+          </div>
+
+          <!-- Tab 3: H/W 정보 -->
+          <div id="consultation-detail-tab-hardware" class="consultation-detail-tab-content hidden">
+            <p class="text-gray-500">H/W 정보가 없습니다.</p>
+          </div>
+
+          <!-- Tab 4: 관리 정보 -->
+          <div id="consultation-detail-tab-manage" class="consultation-detail-tab-content hidden">
+            ${item.notes ? `
+              <div>
+                <label class="text-sm font-semibold text-gray-600 block mb-2">메모</label>
+                <p class="text-gray-800 whitespace-pre-wrap bg-gray-50 p-3 rounded-lg">${item.notes}</p>
+              </div>
+            ` : '<p class="text-gray-500">메모가 없습니다.</p>'}
+          </div>
+
+          <!-- Tab 5: 증빙 자료 (상담 특화: 견적서 체크박스만) -->
+          <div id="consultation-detail-tab-evidence" class="consultation-detail-tab-content hidden">
+            <div class="space-y-4 bg-purple-50 p-6 rounded-lg">
+              <h4 class="font-semibold text-gray-700 mb-3 flex items-center">
+                <i class="fas fa-folder-open mr-2 text-purple-600"></i>
+                증빙 자료 확인
+              </h4>
+              <div class="space-y-3">
+                <label class="flex items-center space-x-3">
+                  <input type="checkbox" ${item.has_quotation ? 'checked' : ''} disabled class="w-5 h-5 text-purple-600 border-gray-300 rounded">
+                  <span class="text-sm font-medium text-gray-800">
+                    <i class="fas fa-file-invoice mr-2 text-blue-600"></i>
+                    견적서 작성 여부
+                  </span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <!-- 버튼 영역 -->
+          <div class="flex justify-between items-center pt-6 border-t mt-6">
+            <button onclick="showConsultationEditModal(${item.id})" class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition">
+              <i class="fas fa-edit mr-2"></i>
+              수정
+            </button>
+            <button onclick="closeConsultationDetailModal()" class="px-6 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 rounded-lg transition">
+              <i class="fas fa-times mr-2"></i>
+              닫기
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+
+  } catch (error) {
+    console.error('상담 상세 조회 오류:', error);
+    alert('상세 정보를 불러올 수 없습니다.');
+  }
+}
+
+function closeConsultationDetailModal() {
+  const modal = document.getElementById('consultationDetailModal');
+  if (modal) modal.remove();
+}
+
+/**
+ * 상담 수정 모달 (operation.js와 동일한 5-Tab 구조)
+ */
+async function showConsultationEditModal(id) {
+  try {
+    const response = await axios.get(`/api/consultations/${id}`);
+    const item = response.data.consultation;
+
+    const modalHTML = `
+      <div id="consultationEditModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg p-6 max-w-5xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+          <!-- 모달 헤더 -->
+          <div class="flex items-center justify-between mb-6 pb-4 border-b">
+            <h3 class="text-2xl font-bold text-gray-800">
+              <i class="fas fa-edit mr-2 text-blue-600"></i>
+              상담 수정
+            </h3>
+            <button onclick="closeConsultationEditModal()" class="text-gray-400 hover:text-gray-600">
+              <i class="fas fa-times text-2xl"></i>
+            </button>
+          </div>
+          
+          <!-- 5-Tab 네비게이션 -->
+          <div class="mb-6 border-b">
+            <nav class="flex space-x-2">
+              <button type="button" onclick="switchConsultationTab('basic')" class="consultation-tab-btn px-6 py-3 font-semibold text-sm transition border-b-2 border-blue-500 text-blue-600" data-tab="basic">
+                <i class="fas fa-user mr-2"></i>기본
+              </button>
+              <button type="button" onclick="switchConsultationTab('finance')" class="consultation-tab-btn px-6 py-3 font-semibold text-sm text-gray-500 hover:text-gray-700 transition border-b-2 border-transparent" data-tab="finance">
+                <i class="fas fa-won-sign mr-2"></i>금융
+              </button>
+              <button type="button" onclick="switchConsultationTab('hardware')" class="consultation-tab-btn px-6 py-3 font-semibold text-sm text-gray-500 hover:text-gray-700 transition border-b-2 border-transparent" data-tab="hardware">
+                <i class="fas fa-laptop mr-2"></i>H/W
+              </button>
+              <button type="button" onclick="switchConsultationTab('manage')" class="consultation-tab-btn px-6 py-3 font-semibold text-sm text-gray-500 hover:text-gray-700 transition border-b-2 border-transparent" data-tab="manage">
+                <i class="fas fa-cog mr-2"></i>관리
+              </button>
+              <button type="button" onclick="switchConsultationTab('evidence')" class="consultation-tab-btn px-6 py-3 font-semibold text-sm text-gray-500 hover:text-gray-700 transition border-b-2 border-transparent" data-tab="evidence">
+                <i class="fas fa-folder-open mr-2"></i>증빙
+              </button>
+            </nav>
+          </div>
+          
+          <form id="consultationEditForm">
+            <!-- Tab 1: 기본 정보 -->
+            <div id="consultation-tab-basic" class="consultation-tab-content">
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-sm font-semibold text-gray-700 mb-2">고객명</label>
+                  <input type="text" id="editCustomerName" value="${item.customer_name || ''}" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                  <label class="block text-sm font-semibold text-gray-700 mb-2">전화번호 <span class="text-red-500">*</span></label>
+                  <input type="tel" id="editPhone" value="${item.phone || ''}" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" required>
+                </div>
+                <div class="col-span-2">
+                  <label class="block text-sm font-semibold text-gray-700 mb-2">상태</label>
+                  <select id="editStatus" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                    <option value="waiting" ${item.status === 'waiting' ? 'selected' : ''}>상담대기</option>
+                    <option value="in_progress" ${item.status === 'in_progress' ? 'selected' : ''}>상담중</option>
+                    <option value="hold" ${item.status === 'hold' ? 'selected' : ''}>보류</option>
+                    <option value="completed" ${item.status === 'completed' ? 'selected' : ''}>계약확정</option>
+                    <option value="cancelled" ${item.status === 'cancelled' ? 'selected' : ''}>취소</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <!-- Tab 2: 금융 정보 -->
+            <div id="consultation-tab-finance" class="consultation-tab-content hidden">
+              <p class="text-gray-500">상담 단계에서는 금융 정보를 입력하지 않습니다.</p>
+            </div>
+
+            <!-- Tab 3: H/W 정보 -->
+            <div id="consultation-tab-hardware" class="consultation-tab-content hidden">
+              <p class="text-gray-500">상담 단계에서는 H/W 정보를 입력하지 않습니다.</p>
+            </div>
+
+            <!-- Tab 4: 관리 정보 -->
+            <div id="consultation-tab-manage" class="consultation-tab-content hidden">
+              <div class="space-y-4">
+                <div>
+                  <label class="block text-sm font-semibold text-gray-700 mb-2">메모</label>
+                  <textarea id="editMemo" rows="6" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="추가 메모사항을 입력하세요...">${item.notes || ''}</textarea>
+                </div>
+              </div>
+            </div>
+
+            <!-- Tab 5: 증빙 자료 (상담 특화: 견적서 체크박스만) -->
+            <div id="consultation-tab-evidence" class="consultation-tab-content hidden">
+              <div class="space-y-4 bg-purple-50 p-6 rounded-lg">
+                <h4 class="font-semibold text-gray-700 mb-3 flex items-center">
+                  <i class="fas fa-folder-open mr-2 text-purple-600"></i>
+                  증빙 자료 확인
+                </h4>
+                <div class="space-y-3">
+                  <label class="flex items-center space-x-3 cursor-pointer">
+                    <input type="checkbox" id="editHasQuotation" ${item.has_quotation ? 'checked' : ''} class="w-5 h-5 text-purple-600 border-gray-300 rounded focus:ring-purple-500">
+                    <span class="text-sm font-medium text-gray-800">
+                      <i class="fas fa-file-invoice mr-2 text-blue-600"></i>
+                      견적서 작성 여부
+                    </span>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <!-- 버튼 -->
+            <div class="flex justify-end space-x-3 pt-6 mt-6 border-t">
+              <button type="button" onclick="closeConsultationEditModal()" class="px-6 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 rounded-lg transition">
+                <i class="fas fa-times mr-2"></i>
+                취소
+              </button>
+              <button type="submit" class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition">
+                <i class="fas fa-save mr-2"></i>
+                저장
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    `;
+
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+
+    // Tab 전환 함수 등록
+    window.switchConsultationTab = function(tabName) {
+      document.querySelectorAll('.consultation-tab-btn').forEach(btn => {
+        btn.classList.remove('text-blue-600', 'border-blue-500');
+        btn.classList.add('text-gray-500', 'border-transparent');
+      });
+      
+      const activeBtn = document.querySelector(`.consultation-tab-btn[data-tab="${tabName}"]`);
+      if (activeBtn) {
+        activeBtn.classList.remove('text-gray-500', 'border-transparent');
+        activeBtn.classList.add('text-blue-600', 'border-blue-500');
+      }
+      
+      document.querySelectorAll('.consultation-tab-content').forEach(content => {
+        content.classList.add('hidden');
+      });
+      
+      const activeContent = document.getElementById(`consultation-tab-${tabName}`);
+      if (activeContent) {
+        activeContent.classList.remove('hidden');
+      }
+    };
+
+    // Tab 전환 함수 등록 (상세보기용)
+    window.switchConsultationDetailTab = function(tabName) {
+      document.querySelectorAll('.consultation-detail-tab-btn').forEach(btn => {
+        btn.classList.remove('text-blue-600', 'border-blue-500');
+        btn.classList.add('text-gray-500', 'border-transparent');
+      });
+      
+      const activeBtn = document.querySelector(`.consultation-detail-tab-btn[data-tab="${tabName}"]`);
+      if (activeBtn) {
+        activeBtn.classList.remove('text-gray-500', 'border-transparent');
+        activeBtn.classList.add('text-blue-600', 'border-blue-500');
+      }
+      
+      document.querySelectorAll('.consultation-detail-tab-content').forEach(content => {
+        content.classList.add('hidden');
+      });
+      
+      const activeContent = document.getElementById(`consultation-detail-tab-${tabName}`);
+      if (activeContent) {
+        activeContent.classList.remove('hidden');
+      }
+    };
+
+    // 폼 제출 이벤트
+    document.getElementById('consultationEditForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      await updateConsultation(id);
+    });
+
+  } catch (error) {
+    console.error('상담 수정 모달 오류:', error);
+    alert('수정 모달을 불러올 수 없습니다.');
+  }
+}
+
+function closeConsultationEditModal() {
+  const modal = document.getElementById('consultationEditModal');
+  if (modal) modal.remove();
+}
+
+/**
+ * 상담 정보 업데이트
+ */
+async function updateConsultation(id) {
+  try {
+    const data = {
+      customer_name: document.getElementById('editCustomerName').value,
+      phone: document.getElementById('editPhone').value,
+      status: document.getElementById('editStatus').value,
+      notes: document.getElementById('editMemo').value || null,
+      has_quotation: document.getElementById('editHasQuotation').checked ? 1 : 0
+    };
+
+    await axios.put(`/api/consultations/${id}`, data);
+    
+    alert('수정되었습니다.');
+    closeConsultationEditModal();
+    closeConsultationDetailModal();
+    
+    // 리스트 새로고침
+    if (currentViewMode === 'list') {
+      loadConsultationList(currentConsultationPage);
+    } else {
+      loadConsultationKanban();
+    }
+  } catch (error) {
+    console.error('상담 수정 오류:', error);
+    alert(error.response?.data?.error || '수정 중 오류가 발생했습니다.');
+  }
+}
+
+/**
  * 엑셀 빈양식 다운로드
  */
 function downloadExcelTemplate() {
-  // CSV 형식으로 빈양식 생성
   const headers = ['고객명', '전화번호', '유입경로', '요청사항'];
-  
-  // 유입경로 옵션 (첫 번째 데이터 행에 주석으로 추가)
   const inflowSourceOptions = inflowSources.map(s => s.value).join(' / ');
   const sampleRow = ['', '', `(선택: ${inflowSourceOptions})`, ''];
   
@@ -250,7 +633,6 @@ function downloadExcelTemplate() {
     sampleRow.join(',')
   ].join('\n');
 
-  // BOM 추가 (엑셀에서 한글 깨짐 방지)
   const bom = '\uFEFF';
   const blob = new Blob([bom + csv], { type: 'text/csv;charset=utf-8;' });
   const link = document.createElement('a');
@@ -309,17 +691,11 @@ function showBulkUploadModal() {
   document.body.insertAdjacentHTML('beforeend', modal);
 }
 
-/**
- * 일괄 업로드 모달 닫기
- */
 function closeBulkUploadModal() {
   const modal = document.getElementById('bulkUploadModal');
   if (modal) modal.remove();
 }
 
-/**
- * CSV 파일 업로드
- */
 async function uploadCSV() {
   const fileInput = document.getElementById('csvFile');
   const file = fileInput.files[0];
@@ -338,14 +714,12 @@ async function uploadCSV() {
       return;
     }
 
-    // 헤더 제거
     const dataLines = lines.slice(1);
     const data = [];
 
     for (const line of dataLines) {
       const cols = line.split(',').map(col => col.trim().replace(/^"|"$/g, ''));
       
-      // 유입경로에서 주석 제거
       let inflowSource = cols[2] || '';
       if (inflowSource.includes('(선택:')) {
         inflowSource = '';
@@ -375,8 +749,6 @@ async function uploadCSV() {
   }
 }
 
-// formatDate 함수는 notice.js에 정의되어 있으므로 재사용
-
 /**
  * 신규 등록 폼 표시
  */
@@ -405,7 +777,6 @@ async function showConsultationForm(id = null) {
 
       <form id="consultationForm" class="p-6 space-y-6">
         <div class="grid grid-cols-2 gap-6">
-          <!-- 고객명 -->
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-2">
               고객명 <span class="text-gray-400">(선택)</span>
@@ -419,7 +790,6 @@ async function showConsultationForm(id = null) {
             >
           </div>
 
-          <!-- 전화번호 -->
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-2">
               전화번호 <span class="text-red-500">*</span>
@@ -435,7 +805,6 @@ async function showConsultationForm(id = null) {
           </div>
         </div>
 
-        <!-- 유입경로 -->
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-2">
             유입경로
@@ -444,7 +813,6 @@ async function showConsultationForm(id = null) {
         </div>
 
         ${isEdit ? `
-          <!-- 진행 상태 -->
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-2">
               진행 상태
@@ -461,7 +829,6 @@ async function showConsultationForm(id = null) {
             </select>
           </div>
 
-          <!-- 세부 옵션 -->
           <div class="flex items-center space-x-6">
             <label class="flex items-center">
               <input
@@ -484,7 +851,6 @@ async function showConsultationForm(id = null) {
           </div>
         ` : ''}
 
-        <!-- 요청사항/메모 -->
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-2">
             요청사항 / 메모
@@ -520,20 +886,16 @@ async function showConsultationForm(id = null) {
 
   document.getElementById('mainContent').innerHTML = content;
 
-  // 폼 제출 이벤트
   document.getElementById('consultationForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     if (isEdit) {
-      await updateConsultation(id);
+      await updateConsultationForm(id);
     } else {
       await submitConsultation();
     }
   });
 }
 
-/**
- * 상담 등록
- */
 async function submitConsultation() {
   const data = {
     customer_name: document.getElementById('customerName').value,
@@ -557,10 +919,7 @@ async function submitConsultation() {
   }
 }
 
-/**
- * 상담 수정
- */
-async function updateConsultation(id) {
+async function updateConsultationForm(id) {
   const data = {
     customer_name: document.getElementById('customerName').value,
     phone: document.getElementById('phone').value,
@@ -586,9 +945,6 @@ async function updateConsultation(id) {
   }
 }
 
-/**
- * 상담 삭제
- */
 async function deleteConsultation(id) {
   if (!confirm('정말 삭제하시겠습니까?')) {
     return;
@@ -605,107 +961,13 @@ async function deleteConsultation(id) {
 }
 
 /**
- * 상담 상세 조회 (간단한 모달)
- */
-async function showConsultationDetail(id) {
-  try {
-    const response = await axios.get(`/api/consultations/${id}`);
-    const item = response.data.consultation;
-
-    const statusMap = {
-      'waiting': { text: '상담대기', color: 'bg-gray-500' },
-      'in_progress': { text: '상담중', color: 'bg-blue-500' },
-      'hold': { text: '보류', color: 'bg-yellow-500' },
-      'completed': { text: '계약확정', color: 'bg-green-500' },
-      'cancelled': { text: '취소', color: 'bg-red-500' }
-    };
-
-    const status = statusMap[item.status] || statusMap['waiting'];
-
-    const modal = `
-      <div id="detailModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onclick="if(event.target.id === 'detailModal') closeDetailModal()">
-        <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-2xl" onclick="event.stopPropagation()">
-          <div class="flex items-center justify-between mb-4">
-            <h3 class="text-xl font-bold text-gray-800">
-              상담 상세 정보
-            </h3>
-            <button onclick="closeDetailModal()" class="text-gray-400 hover:text-gray-600">
-              <i class="fas fa-times text-xl"></i>
-            </button>
-          </div>
-
-          <div class="space-y-4">
-            <div class="flex items-center space-x-2">
-              <span class="${status.color} text-white text-sm px-3 py-1 rounded">${status.text}</span>
-              ${item.is_visit_consultation ? '<span class="bg-purple-100 text-purple-700 text-xs px-2 py-1 rounded">방문상담</span>' : ''}
-              ${item.has_quotation ? '<span class="bg-blue-100 text-blue-700 text-xs px-2 py-1 rounded">견적서</span>' : ''}
-            </div>
-
-            <div class="grid grid-cols-2 gap-4">
-              <div>
-                <p class="text-sm text-gray-600">고객명</p>
-                <p class="font-semibold">${item.customer_name || '-'}</p>
-              </div>
-              <div>
-                <p class="text-sm text-gray-600">전화번호</p>
-                <p class="font-semibold">${item.phone}</p>
-              </div>
-              <div>
-                <p class="text-sm text-gray-600">유입경로</p>
-                <p class="font-semibold">${getLabelByValue('inflow_source', item.inflow_source)}</p>
-              </div>
-              <div>
-                <p class="text-sm text-gray-600">등록일</p>
-                <p class="font-semibold">${formatDate(item.created_at)}</p>
-              </div>
-            </div>
-
-            ${item.notes ? `
-              <div>
-                <p class="text-sm text-gray-600 mb-2">요청사항 / 메모</p>
-                <p class="bg-gray-50 p-4 rounded-lg whitespace-pre-wrap">${item.notes}</p>
-              </div>
-            ` : ''}
-
-            <div class="flex space-x-2 pt-4">
-              <button onclick="closeDetailModal(); showConsultationForm(${item.id})" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition">
-                <i class="fas fa-edit mr-2"></i>
-                수정
-              </button>
-              <button onclick="closeDetailModal()" class="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold py-2 px-4 rounded-lg transition">
-                닫기
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    `;
-
-    document.body.insertAdjacentHTML('beforeend', modal);
-  } catch (error) {
-    console.error('Load detail error:', error);
-    alert('상담 정보를 불러올 수 없습니다.');
-  }
-}
-
-/**
- * 상세 모달 닫기
- */
-function closeDetailModal() {
-  const modal = document.getElementById('detailModal');
-  if (modal) modal.remove();
-}
-
-/**
  * 칸반 보드 조회
  */
 async function loadConsultationKanban() {
   try {
-    // 모든 상태별 데이터 조회
     const response = await axios.get('/api/consultations?page=1&limit=1000');
     const consultations = response.data.consultations || [];
 
-    // 상태별로 그룹화
     const grouped = {
       'waiting': [],
       'in_progress': [],
@@ -730,7 +992,6 @@ async function loadConsultationKanban() {
 
     const content = `
       <div class="bg-white rounded-lg shadow-md">
-        <!-- 헤더 -->
         <div class="p-6 border-b border-gray-200">
           <div class="flex items-center justify-between mb-4">
             <h2 class="text-2xl font-bold text-gray-800">
@@ -766,7 +1027,6 @@ async function loadConsultationKanban() {
           </div>
         </div>
 
-        <!-- 칸반 보드 -->
         <div class="p-6">
           <div class="grid grid-cols-5 gap-4">
             ${Object.keys(statusConfig).map(status => {
@@ -775,7 +1035,6 @@ async function loadConsultationKanban() {
               
               return `
                 <div class="bg-gray-50 rounded-lg p-4">
-                  <!-- 컬럼 헤더 -->
                   <div class="flex items-center justify-between mb-4">
                     <div class="flex items-center">
                       <i class="fas ${config.icon} ${config.color.replace('bg-', 'text-')} mr-2"></i>
@@ -784,7 +1043,6 @@ async function loadConsultationKanban() {
                     <span class="bg-white text-gray-700 text-sm font-semibold px-2 py-1 rounded">${items.length}</span>
                   </div>
 
-                  <!-- 드롭존 -->
                   <div 
                     class="kanban-column min-h-[600px] space-y-3" 
                     data-status="${status}"
@@ -809,9 +1067,6 @@ async function loadConsultationKanban() {
   }
 }
 
-/**
- * 칸반 카드 렌더링
- */
 function renderKanbanCard(item, config) {
   return `
     <div 
@@ -820,9 +1075,8 @@ function renderKanbanCard(item, config) {
       data-id="${item.id}"
       ondragstart="handleDragStart(event)"
       ondragend="handleDragEnd(event)"
-      onclick="showConsultationDetail(${item.id})"
+      onclick="viewConsultationDetail(${item.id})"
     >
-      <!-- 카드 헤더 -->
       <div class="flex items-center justify-between mb-2">
         <span class="text-xs font-semibold text-gray-500">#${item.id}</span>
         <div class="flex space-x-1">
@@ -831,7 +1085,6 @@ function renderKanbanCard(item, config) {
         </div>
       </div>
 
-      <!-- 고객 정보 -->
       <div class="mb-3">
         <p class="font-semibold text-gray-800 mb-1">${item.customer_name || '고객명 미입력'}</p>
         <p class="text-sm text-gray-600">
@@ -840,7 +1093,6 @@ function renderKanbanCard(item, config) {
         </p>
       </div>
 
-      <!-- 유입경로 -->
       ${item.inflow_source ? `
         <div class="mb-2">
           <span class="inline-block bg-indigo-100 text-indigo-700 text-xs px-2 py-1 rounded">
@@ -849,12 +1101,10 @@ function renderKanbanCard(item, config) {
         </div>
       ` : ''}
 
-      <!-- 메모 미리보기 -->
       ${item.notes ? `
         <p class="text-xs text-gray-500 mb-2 line-clamp-2">${item.notes}</p>
       ` : ''}
 
-      <!-- 등록 정보 -->
       <div class="text-xs text-gray-400 border-t pt-2 mt-2">
         <p>등록: ${item.created_by_name}</p>
         ${item.updated_by_name ? `<p>수정: ${item.updated_by_name}</p>` : ''}
@@ -864,9 +1114,6 @@ function renderKanbanCard(item, config) {
   `;
 }
 
-/**
- * 드래그 시작
- */
 let draggedElement = null;
 
 function handleDragStart(e) {
@@ -876,21 +1123,14 @@ function handleDragStart(e) {
   e.dataTransfer.setData('text/html', e.currentTarget.innerHTML);
 }
 
-/**
- * 드래그 종료
- */
 function handleDragEnd(e) {
   e.currentTarget.style.opacity = '1';
   
-  // 모든 드롭존 하이라이트 제거
   document.querySelectorAll('.kanban-column').forEach(col => {
     col.classList.remove('bg-blue-100', 'border-2', 'border-blue-400', 'border-dashed');
   });
 }
 
-/**
- * 드래그 오버
- */
 function handleDragOver(e) {
   if (e.preventDefault) {
     e.preventDefault();
@@ -903,17 +1143,11 @@ function handleDragOver(e) {
   return false;
 }
 
-/**
- * 드래그 리브
- */
 function handleDragLeave(e) {
   const column = e.currentTarget;
   column.classList.remove('bg-blue-100', 'border-2', 'border-blue-400', 'border-dashed');
 }
 
-/**
- * 드롭 처리
- */
 async function handleDrop(e) {
   if (e.stopPropagation) {
     e.stopPropagation();
@@ -928,8 +1162,6 @@ async function handleDrop(e) {
     
     try {
       await axios.put(`/api/consultations/${itemId}/status`, { status: newStatus });
-      
-      // 칸반 보드 새로고침
       loadConsultationKanban();
     } catch (error) {
       console.error('Update status error:', error);
@@ -940,12 +1172,8 @@ async function handleDrop(e) {
   return false;
 }
 
-/**
- * 계약 이관 모달 표시
- */
 async function showMigrateToContractModal() {
   try {
-    // 계약확정 상태 건수 조회
     const response = await axios.get('/api/consultations/stats/completed');
     const { count, ids } = response.data;
 
@@ -1000,17 +1228,11 @@ async function showMigrateToContractModal() {
   }
 }
 
-/**
- * 계약 이관 모달 닫기
- */
 function closeMigrateModal() {
   const modal = document.getElementById('migrateModal');
   if (modal) modal.remove();
 }
 
-/**
- * 계약현황으로 이관 실행
- */
 async function migrateToContract(ids) {
   try {
     const response = await axios.post('/api/contracts/migrate', {
@@ -1030,7 +1252,6 @@ async function migrateToContract(ids) {
     alert(message);
     closeMigrateModal();
     
-    // 리스트 새로고침
     if (currentViewMode === 'list') {
       loadConsultationList(currentConsultationPage);
     } else {
@@ -1042,168 +1263,16 @@ async function migrateToContract(ids) {
   }
 }
 
-/**
- * 이전 기록 검색 모달 표시
- */
 function showArchiveSearchModal() {
-  const modal = `
-    <div id="archiveSearchModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onclick="if(event.target.id === 'archiveSearchModal') closeArchiveSearchModal()">
-      <div class="bg-white rounded-lg shadow-xl w-full max-w-6xl max-h-[90vh] overflow-hidden" onclick="event.stopPropagation()">
-        <!-- 헤더 -->
-        <div class="p-6 border-b border-gray-200 bg-gray-50">
-          <div class="flex items-center justify-between">
-            <h3 class="text-2xl font-bold text-gray-800">
-              <i class="fas fa-search mr-2 text-gray-600"></i>
-              이전 기록 검색
-            </h3>
-            <button onclick="closeArchiveSearchModal()" class="text-gray-500 hover:text-gray-700 transition">
-              <i class="fas fa-times text-2xl"></i>
-            </button>
-          </div>
-          
-          <!-- 필터 -->
-          <div class="mt-4 flex space-x-2">
-            <button onclick="filterArchive('all')" id="filterAll" class="px-4 py-2 bg-indigo-600 text-white rounded-lg transition">
-              전체
-            </button>
-            <button onclick="filterArchive('completed')" id="filterCompleted" class="px-4 py-2 bg-gray-200 text-gray-700 hover:bg-gray-300 rounded-lg transition">
-              계약확정
-            </button>
-            <button onclick="filterArchive('cancelled')" id="filterCancelled" class="px-4 py-2 bg-gray-200 text-gray-700 hover:bg-gray-300 rounded-lg transition">
-              취소
-            </button>
-          </div>
-        </div>
-        
-        <!-- 콘텐츠 -->
-        <div id="archiveSearchContent" class="p-6 overflow-y-auto" style="max-height: calc(90vh - 200px);">
-          <div class="flex items-center justify-center h-40">
-            <i class="fas fa-spinner fa-spin text-4xl text-indigo-600"></i>
-          </div>
-        </div>
-      </div>
-    </div>
-  `;
-  
-  document.body.insertAdjacentHTML('beforeend', modal);
-  
-  // 초기 데이터 로드
-  loadArchiveData('all');
-}
-
-/**
- * 이전 기록 검색 모달 닫기
- */
-function closeArchiveSearchModal() {
-  const modal = document.getElementById('archiveSearchModal');
-  if (modal) modal.remove();
-}
-
-/**
- * 필터 변경
- */
-function filterArchive(type) {
-  // 버튼 스타일 변경
-  ['filterAll', 'filterCompleted', 'filterCancelled'].forEach(id => {
-    const btn = document.getElementById(id);
-    if (btn) {
-      if (id === `filter${type.charAt(0).toUpperCase() + type.slice(1)}` || (type === 'all' && id === 'filterAll')) {
-        btn.className = 'px-4 py-2 bg-indigo-600 text-white rounded-lg transition';
-      } else {
-        btn.className = 'px-4 py-2 bg-gray-200 text-gray-700 hover:bg-gray-300 rounded-lg transition';
-      }
-    }
-  });
-  
-  loadArchiveData(type);
-}
-
-/**
- * 이전 기록 데이터 로드
- */
-async function loadArchiveData(type) {
-  try {
-    const content = document.getElementById('archiveSearchContent');
-    content.innerHTML = '<div class="flex items-center justify-center h-40"><i class="fas fa-spinner fa-spin text-4xl text-indigo-600"></i></div>';
-    
-    let url = '/api/consultations?page=1&limit=100&search_archive=true';
-    if (type !== 'all') {
-      url += `&status=${type}`;
-    }
-    
-    const response = await axios.get(url);
-    const consultations = response.data.consultations || [];
-    
-    if (consultations.length === 0) {
-      content.innerHTML = `
-        <div class="text-center py-12">
-          <i class="fas fa-inbox text-gray-400 text-5xl mb-4"></i>
-          <p class="text-gray-600">검색 결과가 없습니다.</p>
-        </div>
-      `;
-      return;
-    }
-    
-    const statusMap = {
-      'completed': { text: '계약확정', color: 'bg-green-500' },
-      'cancelled': { text: '취소', color: 'bg-red-500' }
-    };
-    
-    const tableHTML = `
-      <div class="overflow-x-auto">
-        <table class="w-full">
-          <thead class="bg-gray-100 border-b-2 border-gray-200">
-            <tr>
-              <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">ID</th>
-              <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">상태</th>
-              <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">고객명</th>
-              <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">전화번호</th>
-              <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">유입경로</th>
-              <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">옵션</th>
-              <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">등록일</th>
-              <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">관리</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-gray-200">
-            ${consultations.map(item => `
-              <tr class="hover:bg-gray-50">
-                <td class="px-4 py-3 text-sm text-gray-900">${item.id}</td>
-                <td class="px-4 py-3">
-                  <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium text-white ${statusMap[item.status]?.color || 'bg-gray-500'}">
-                    ${statusMap[item.status]?.text || item.status}
-                  </span>
-                </td>
-                <td class="px-4 py-3 text-sm text-gray-900">${item.customer_name || '-'}</td>
-                <td class="px-4 py-3 text-sm text-gray-600">${item.phone || '-'}</td>
-                <td class="px-4 py-3 text-sm text-gray-600">${item.inflow_source || '-'}</td>
-                <td class="px-4 py-3 text-sm text-gray-600">${item.option || '-'}</td>
-                <td class="px-4 py-3 text-sm text-gray-600">${formatDate(item.created_at)}</td>
-                <td class="px-4 py-3">
-                  <button onclick="showConsultationDetail(${item.id})" class="text-indigo-600 hover:text-indigo-800 transition">
-                    <i class="fas fa-eye"></i>
-                  </button>
-                </td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
-      </div>
-    `;
-    
-    content.innerHTML = tableHTML;
-  } catch (error) {
-    console.error('Load archive data error:', error);
-    const content = document.getElementById('archiveSearchContent');
-    content.innerHTML = `
-      <div class="text-center py-12">
-        <i class="fas fa-exclamation-triangle text-red-500 text-5xl mb-4"></i>
-        <p class="text-red-600">데이터를 불러올 수 없습니다.</p>
-      </div>
-    `;
-  }
+  alert('이전 기록 검색 기능은 준비 중입니다.');
 }
 
 // Window 객체에 함수 바인딩
 window.loadConsultationPage = loadConsultationPage;
 window.loadConsultationList = loadConsultationList;
 window.handleSort_consultation = handleSort_consultation;
+window.viewConsultationDetail = viewConsultationDetail;
+window.closeConsultationDetailModal = closeConsultationDetailModal;
+window.showConsultationEditModal = showConsultationEditModal;
+window.closeConsultationEditModal = closeConsultationEditModal;
+window.updateConsultation = updateConsultation;
