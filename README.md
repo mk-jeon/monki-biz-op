@@ -45,6 +45,14 @@
 - 미충족 조건 시 상세 에러 메시지 표시
 
 ## 완료된 기능
+### Phase 3 (2026-02-03) - 긴급 버그 수정
+✅ **설치현황 페이지 진입 불가 해결**: IIFE 스코프 문제 완전 해결, 전역 함수 선언
+✅ **대시보드 집계 정상화**: 진행 중 건수만 표시 (completed/cancelled 제외)
+✅ **계약현황 필드 변경**: '유입경로' → '등록사유' 변경
+✅ **가맹점현황 데이터 연동**: 옵셔널 체이닝 추가로 안정성 강화
+✅ **이관 후 리다이렉트 제거**: 설치 이관 후 제자리 새로고침
+✅ **운영등재 카운트**: operationCount ID 추가로 대시보드 표시 정상화
+
 ### Phase 2 (2026-02-02)
 ✅ 50개 컬럼 스키마 확장 (Consultations, Contracts, Installations, Operations, Franchises)
 ✅ 5-Tab UI 전면 개편 (운영등재)
@@ -63,16 +71,24 @@
 ✅ 사용자 관리
 ✅ 권한 기반 메뉴 시스템
 
-## 다음 단계 (Phase 3)
-- 5-Tab UI 확장 (Consultation, Contract, Installation 페이지)
+## 알려진 이슈
+⚠️ **계약현황**: '등록사유' 드롭다운이 비어있을 수 있음 → **해결**: 항목관리에서 'registration_reason' 카테고리 수동 추가 필요
+  - 카테고리명: `registration_reason`
+  - 라벨: `등록사유`
+  - 페이지: `contract`
+  - 값 예시: 신규 개설, 인수 인계, 재계약, 업그레이드
+
+## 다음 단계 (Phase 4)
+- 5-Tab UI 확장 (Consultation, Contract 페이지)
 - 가맹점현황 고도화
 - 정산 전용 디자인
 - 재고 대시보드
 
 ## 배포 정보
 - **프로덕션**: https://monki-biz-op.pages.dev
-- **최근 배포**: 2026-02-02
-- **커밋**: Phase 2 완료
+- **최신 배포**: https://7c352d69.monki-biz-op.pages.dev
+- **최근 업데이트**: 2026-02-03 (Phase 3 긴급 버그 수정)
+- **커밋**: 420e383
 - **데이터베이스**: Cloudflare D1 (SQLite)
 
 ## 로그인 정보
