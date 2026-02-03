@@ -1,7 +1,15 @@
-// 설치현황 모듈 - 전역 함수로 재작성 (IIFE 제거)
-'use strict';
+// 설치현황 관련 함수
 
-console.log('🔵 installation.js 모듈 로드 시작 (전역 함수 버전)');
+let currentInstallationPage = 1;
+let currentInstallationViewMode = 'list'; // 'list' or 'kanban'
+let installationTypes = []; // 설치유형 목록
+
+/**
+ * 설치 정렬 처리 함수
+ */
+function handleSort_installation(field) {
+  window.handleSort(field, 'installation', () => loadInstallationList(currentInstallationPage));
+}
 
 /**
  * 날짜 포맷 함수
@@ -31,31 +39,15 @@ function formatInstallationDate(dateString) {
   }
 }
 
-let currentInstallationPage = 1;
-let currentInstallationViewMode = 'list';
-let installationTypes = []; // 설치유형 목록
-
-/**
- * 설치 정렬 처리 함수
- */
-function handleSort_installation(field) {
-  window.handleSort(field, 'installation', function() {
-    loadInstallationList(currentInstallationPage);
-  });
-}
-
 /**
  * 설치현황 페이지 로드
  */
 async function loadInstallationPage() {
   console.log('✅ loadInstallationPage 호출됨');
   try {
-    // dropdown-helper.js의 전역 함수 사용
     if (typeof loadDropdownItems === 'function') {
       installationTypes = await loadDropdownItems('installation_type');
       console.log('✅ installationTypes 로드 완료:', installationTypes.length);
-    } else {
-      console.warn('⚠️ loadDropdownItems 함수를 찾을 수 없습니다.');
     }
   } catch (error) {
     console.error('드롭다운 로드 오류:', error);
@@ -80,27 +72,23 @@ function toggleInstallationViewMode() {
 /**
  * 설치현황 리스트 조회
  */
-async function loadInstallationList(page) {
-  page = page || 1;
+async function loadInstallationList(page = 1) {
   console.log(`✅ loadInstallationList 실행 (page=${page})`);
   
   try {
     const response = await axios.get(`/api/installations?page=${page}&limit=50`);
-    let installations = response.data.installations || [];
-    const pagination = response.data.pagination || { page: 1, totalPages: 1 };
+    let { installations, pagination } = response.data;
     
     // 정렬 적용
-    if (window.sortStates && window.sortStates.installation) {
-      const sortState = window.sortStates.installation;
-      installations = window.sortData(installations, sortState.field, sortState.order, 'installation');
-    }
+    const sortState = window.sortStates.installation;
+    installations = window.sortData(installations, sortState.field, sortState.order, 'installation');
 
     const statusMap = {
-      'waiting': { text: '설치대기', color: 'bg-gray-500', icon: 'fa-clock' },
-      'in_progress': { text: '설치 중', color: 'bg-blue-500', icon: 'fa-spinner' },
-      'hold': { text: '설치보류', color: 'bg-yellow-500', icon: 'fa-pause-circle' },
-      'completed': { text: '설치완료', color: 'bg-green-500', icon: 'fa-check-circle' },
-      'cancelled': { text: '설치취소', color: 'bg-red-500', icon: 'fa-times-circle' }
+      'waiting': { text: '설치대기', color: 'bg-gray-500' },
+      'in_progress': { text: '설치 중', color: 'bg-blue-500' },
+      'hold': { text: '설치보류', color: 'bg-yellow-500' },
+      'completed': { text: '설치완료', color: 'bg-green-500' },
+      'cancelled': { text: '설치취소', color: 'bg-red-500' }
     };
 
     const content = `
@@ -117,11 +105,15 @@ async function loadInstallationList(page) {
                 <i class="fas fa-search mr-2"></i>
                 이전 기록 검색
               </button>
-              <button onclick="toggleInstallationViewMode()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition flex items-center">
-                <i class="fas ${currentInstallationViewMode === 'list' ? 'fa-th' : 'fa-list'} mr-2"></i>
+              <button onclick="showMigrateToOperationModal()" class="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg transition flex items-center">
+                <i class="fas fa-arrow-right mr-2"></i>
+                운영 이관
+              </button>
+              <button onclick="toggleInstallationViewMode()" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg transition flex items-center">
+                <i class="fas fa-${currentInstallationViewMode === 'list' ? 'th-large' : 'list'} mr-2"></i>
                 ${currentInstallationViewMode === 'list' ? '칸반 보기' : '리스트 보기'}
               </button>
-              <button onclick="showInstallationFormModal()" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition flex items-center">
+              <button onclick="showInstallationForm()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg transition flex items-center">
                 <i class="fas fa-plus mr-2"></i>
                 신규 등록
               </button>
@@ -129,53 +121,87 @@ async function loadInstallationList(page) {
           </div>
         </div>
 
-        <!-- 테이블 -->
+        <!-- 리스트 테이블 -->
         <div class="overflow-x-auto">
-          <table class="min-w-full divide-y divide-gray-200">
-            <thead class="bg-gray-50">
+          <table class="w-full">
+            <thead class="bg-gray-50 border-b-2 border-gray-200">
               <tr>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100" onclick="handleSort_installation('id')">
-                  번호 ${window.renderSortIcon ? window.renderSortIcon('installation', 'id') : ''}
+                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase cursor-pointer hover:bg-gray-100 transition" onclick="handleSort_installation('id')">
+                  <div class="flex items-center">
+                    ID
+                    ${window.getSortIcon('id', sortState.field, sortState.order)}
+                  </div>
                 </th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100" onclick="handleSort_installation('status')">
-                  상태 ${window.renderSortIcon ? window.renderSortIcon('installation', 'status') : ''}
+                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase cursor-pointer hover:bg-gray-100 transition" onclick="handleSort_installation('status')">
+                  <div class="flex items-center">
+                    상태
+                    ${window.getSortIcon('status', sortState.field, sortState.order)}
+                  </div>
                 </th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">고객명</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">연락처</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">유입경로</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100" onclick="handleSort_installation('created_at')">
-                  등록일 ${window.renderSortIcon ? window.renderSortIcon('installation', 'created_at') : ''}
+                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase cursor-pointer hover:bg-gray-100 transition" onclick="handleSort_installation('customer_name')">
+                  <div class="flex items-center">
+                    고객명
+                    ${window.getSortIcon('customer_name', sortState.field, sortState.order)}
+                  </div>
                 </th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">등록자</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">관리</th>
+                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase cursor-pointer hover:bg-gray-100 transition" onclick="handleSort_installation('phone')">
+                  <div class="flex items-center">
+                    전화번호
+                    ${window.getSortIcon('phone', sortState.field, sortState.order)}
+                  </div>
+                </th>
+                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">유입경로</th>
+                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">옵션</th>
+                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase cursor-pointer hover:bg-gray-100 transition" onclick="handleSort_installation('created_at')">
+                  <div class="flex items-center">
+                    등록일
+                    ${window.getSortIcon('created_at', sortState.field, sortState.order)}
+                  </div>
+                </th>
+                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase cursor-pointer hover:bg-gray-100 transition" onclick="handleSort_installation('created_by_name')">
+                  <div class="flex items-center">
+                    등록자
+                    ${window.getSortIcon('created_by_name', sortState.field, sortState.order)}
+                  </div>
+                </th>
+                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">수정자</th>
+                <th class="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase">관리</th>
               </tr>
             </thead>
-            <tbody class="bg-white divide-y divide-gray-200">
-              ${installations.map(inst => {
-                const statusInfo = statusMap[inst.status] || statusMap['waiting'];
+            <tbody class="divide-y divide-gray-200">
+              ${installations.length === 0 ? `
+                <tr>
+                  <td colspan="10" class="px-4 py-8 text-center text-gray-500">
+                    <i class="fas fa-inbox text-4xl mb-4"></i>
+                    <p>등록된 설치가 없습니다.</p>
+                  </td>
+                </tr>
+              ` : installations.map(item => {
+                const status = statusMap[item.status] || statusMap['waiting'];
                 return `
-                  <tr class="hover:bg-gray-50 cursor-pointer" onclick="showInstallationDetailModal(${inst.id})">
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${inst.id}</td>
-                    <td class="px-6 py-4 whitespace-nowrap">
-                      <span class="${statusInfo.color} text-white px-3 py-1 rounded-full text-xs font-medium">
-                        <i class="fas ${statusInfo.icon} mr-1"></i>
-                        ${statusInfo.text}
-                      </span>
+                  <tr class="hover:bg-gray-50 cursor-pointer" onclick="viewInstallationDetail(${item.id})">
+                    <td class="px-4 py-3 text-sm font-medium text-gray-900">${item.id}</td>
+                    <td class="px-4 py-3">
+                      <span class="${status.color} text-white text-xs px-2 py-1 rounded">${status.text}</span>
                     </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${inst.customer_name || '-'}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">${inst.phone || '-'}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">${inst.inflow_source || '-'}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${formatInstallationDate(inst.created_at)}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">${inst.created_by_name || '-'}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm">
-                      <div class="flex space-x-2">
-                        <button onclick="event.stopPropagation(); showInstallationEditModal(${inst.id})" class="text-blue-600 hover:text-blue-800">
-                          <i class="fas fa-edit"></i>
-                        </button>
-                        <button onclick="event.stopPropagation(); deleteInstallation(${inst.id})" class="text-red-600 hover:text-red-800">
-                          <i class="fas fa-trash"></i>
-                        </button>
+                    <td class="px-4 py-3 text-sm text-gray-900">${item.customer_name || '-'}</td>
+                    <td class="px-4 py-3 text-sm text-gray-900">${item.phone}</td>
+                    <td class="px-4 py-3 text-sm text-gray-600">${item.inflow_source || '-'}</td>
+                    <td class="px-4 py-3">
+                      <div class="flex space-x-1">
+                        ${item.contract_signed ? '<span class="bg-blue-100 text-blue-700 text-xs px-2 py-1 rounded">계약서</span>' : ''}
                       </div>
+                    </td>
+                    <td class="px-4 py-3 text-sm text-gray-600">${formatInstallationDate(item.created_at)}</td>
+                    <td class="px-4 py-3 text-sm text-gray-600">${item.created_by_name}</td>
+                    <td class="px-4 py-3 text-sm text-gray-600">${item.updated_by_name || '-'}</td>
+                    <td class="px-4 py-3 text-center">
+                      <button onclick="event.stopPropagation(); showInstallationEditModal(${item.id})" class="text-blue-600 hover:text-blue-800 mr-2">
+                        <i class="fas fa-edit"></i>
+                      </button>
+                      <button onclick="event.stopPropagation(); deleteInstallation(${item.id})" class="text-red-600 hover:text-red-800">
+                        <i class="fas fa-trash"></i>
+                      </button>
                     </td>
                   </tr>
                 `;
@@ -185,801 +211,168 @@ async function loadInstallationList(page) {
         </div>
 
         <!-- 페이지네이션 -->
-        <div class="p-6 border-t border-gray-200">
-          ${window.renderPagination ? window.renderPagination(pagination.page || pagination.currentPage, pagination.totalPages, 'loadInstallationList') : ''}
-        </div>
+        ${pagination.totalPages > 1 ? `
+          <div class="p-4 border-t border-gray-200 flex justify-center space-x-2">
+            ${pagination.page > 1 ? `
+              <button onclick="loadInstallationList(${pagination.page - 1})" class="px-3 py-2 bg-gray-200 hover:bg-gray-300 rounded transition">
+                <i class="fas fa-chevron-left"></i>
+              </button>
+            ` : ''}
+            
+            <span class="px-4 py-2 bg-indigo-600 text-white rounded">
+              ${pagination.page} / ${pagination.totalPages}
+            </span>
+            
+            ${pagination.page < pagination.totalPages ? `
+              <button onclick="loadInstallationList(${pagination.page + 1})" class="px-3 py-2 bg-gray-200 hover:bg-gray-300 rounded transition">
+                <i class="fas fa-chevron-right"></i>
+              </button>
+            ` : ''}
+          </div>
+        ` : ''}
       </div>
     `;
-    
+
     document.getElementById('mainContent').innerHTML = content;
     currentInstallationPage = page;
   } catch (error) {
-    console.error('설치 목록 로드 오류:', error);
-    document.getElementById('mainContent').innerHTML = `
-      <div class="p-8 text-center text-red-600">
-        <i class="fas fa-exclamation-triangle text-4xl mb-4"></i>
-        <p>데이터를 불러오는 중 오류가 발생했습니다.</p>
-        <button onclick="loadInstallationList()" class="mt-4 bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-lg">
-          다시 시도
-        </button>
-      </div>
-    `;
+    console.error('Load installation list error:', error);
+    alert('설치 목록을 불러올 수 없습니다.');
   }
 }
 
 /**
- * 설치 등록 폼 모달 (5-Tab)
+ * 설치 상세 보기 (5-Tab 모달 구조)
  */
-function showInstallationFormModal() {
-  const modal = document.getElementById('installationFormModal') || createInstallationFormModal();
-  modal.classList.remove('hidden');
-  
-  // 폼 초기화
-  const form = document.getElementById('installationForm');
-  if (form) {
-    form.reset();
-    delete form.dataset.id;
-    delete form.dataset.mode;
-  }
-  document.getElementById('installationFormTitle').textContent = '설치 신규 등록';
-  
-  // Tab 1을 기본으로 활성화
-  switchInstallationTab(1);
-}
-
-/**
- * 설치 수정 폼 모달 (5-Tab)
- */
-async function showInstallationEditModal(id) {
+async function viewInstallationDetail(id) {
   try {
     const response = await axios.get(`/api/installations/${id}`);
-    const inst = response.data;
-    
-    const modal = document.getElementById('installationFormModal') || createInstallationFormModal();
-    modal.classList.remove('hidden');
-    
-    // 폼에 데이터 채우기
-    document.getElementById('installationFormTitle').textContent = '설치 정보 수정';
-    const form = document.getElementById('installationForm');
-    form.dataset.id = id;
-    form.dataset.mode = 'edit';
-    
-    // Tab 1: 기본정보
-    document.getElementById('customerName').value = inst.customer_name || '';
-    document.getElementById('phone').value = inst.phone || '';
-    document.getElementById('inflowSource').value = inst.inflow_source || '';
-    document.getElementById('birthDate').value = inst.birth_date || '';
-    document.getElementById('email').value = inst.email || '';
-    document.getElementById('businessNumber').value = inst.business_number || '';
-    document.getElementById('representative').value = inst.representative || '';
-    document.getElementById('roadAddress').value = inst.road_address || '';
-    document.getElementById('detailAddress').value = inst.detail_address || '';
-    document.getElementById('region').value = inst.region || '';
-    document.getElementById('regionType').value = inst.region_type || '';
-    
-    // Tab 2: 금융정보
-    document.getElementById('bankName').value = inst.bank_name || '';
-    document.getElementById('accountNumber').value = inst.account_number || '';
-    document.getElementById('accountHolder').value = inst.account_holder || '';
-    document.getElementById('contractType').value = inst.contract_type || '';
-    document.getElementById('withdrawalDay').value = inst.withdrawal_day || '';
-    document.getElementById('monthlyRentalFee').value = inst.monthly_rental_fee || '';
-    document.getElementById('deposit').value = inst.deposit || '';
-    document.getElementById('contractDate').value = inst.contract_date || '';
-    document.getElementById('contractNumber').value = inst.contract_number || '';
-    
-    // Tab 3: H/W 정보
-    document.getElementById('posAgency').value = inst.pos_agency || '';
-    document.getElementById('posVendor').value = inst.pos_vendor || '';
-    document.getElementById('posModel').value = inst.pos_model || '';
-    document.getElementById('posProgram').value = inst.pos_program || '';
-    document.getElementById('aspId').value = inst.asp_id || '';
-    document.getElementById('aspPassword').value = inst.asp_password || '';
-    document.getElementById('aspUrl').value = inst.asp_url || '';
-    document.getElementById('tableOrderQty').value = inst.table_order_qty || 0;
-    document.getElementById('standStandard').value = inst.stand_standard || 0;
-    document.getElementById('standFlat').value = inst.stand_flat || 0;
-    document.getElementById('standExtended').value = inst.stand_extended || 0;
-    document.getElementById('chargerQty').value = inst.charger_qty || 0;
-    document.getElementById('batteryQty').value = inst.battery_qty || 0;
-    document.getElementById('routerQty').value = inst.router_qty || 0;
-    document.getElementById('kioskQty').value = inst.kiosk_qty || 0;
-    document.getElementById('kitchenPrinterQty').value = inst.kitchen_printer_qty || 0;
-    document.getElementById('callBellQty').value = inst.call_bell_qty || 0;
-    
-    // Tab 4: 관리
-    document.getElementById('crmService').checked = inst.crm_service === 1;
-    document.getElementById('aiSalesService').checked = inst.ai_sales_service === 1;
-    document.getElementById('memo').value = inst.memo || '';
-    
-    // Tab 5: 증빙 (✅ 운영등재 이관 시 필수)
-    document.getElementById('contractChecked').checked = inst.contract_checked === 1;
-    document.getElementById('certChecked').checked = inst.installation_cert_checked === 1;
-    document.getElementById('photoChecked').checked = inst.installation_photo_checked === 1;
-    document.getElementById('driveUrl').value = inst.drive_url || '';
-    
-    // Tab 1을 기본으로 활성화
-    switchInstallationTab(1);
-    
-  } catch (error) {
-    console.error('설치 정보 로드 오류:', error);
-    alert('데이터를 불러오는 중 오류가 발생했습니다.');
-  }
-}
+    const item = response.data;
 
-/**
- * 설치 폼 모달 생성 (5-Tab 구조)
- */
-function createInstallationFormModal() {
-  const modalHTML = `
-    <div id="installationFormModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
-      <div class="bg-white rounded-lg shadow-xl w-11/12 max-w-5xl max-h-[90vh] overflow-y-auto">
-        <!-- 모달 헤더 -->
-        <div class="sticky top-0 bg-white border-b border-gray-200 p-6 z-10">
-          <div class="flex items-center justify-between">
-            <h3 id="installationFormTitle" class="text-2xl font-bold text-gray-800">
-              <i class="fas fa-tools mr-2 text-purple-600"></i>
-              설치 신규 등록
+    const statusMap = {
+      'waiting': '설치대기',
+      'in_progress': '설치 중',
+      'hold': '설치보류',
+      'completed': '설치완료',
+      'cancelled': '설치취소'
+    };
+
+    const modalHTML = `
+      <div id="installationDetailModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg p-6 max-w-5xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+          <!-- 모달 헤더 -->
+          <div class="flex items-center justify-between mb-6 pb-4 border-b">
+            <h3 class="text-2xl font-bold text-gray-800">
+              <i class="fas fa-info-circle mr-2 text-purple-600"></i>
+              설치 상세 정보
             </h3>
-            <button onclick="closeInstallationFormModal()" type="button" class="text-gray-400 hover:text-gray-600 text-2xl">
-              <i class="fas fa-times"></i>
+            <button onclick="closeInstallationDetailModal()" class="text-gray-400 hover:text-gray-600">
+              <i class="fas fa-times text-2xl"></i>
             </button>
           </div>
           
-          <!-- Tab 네비게이션 -->
-          <div class="flex space-x-2 mt-4 border-b border-gray-200">
-            <button type="button" onclick="switchInstallationTab(1)" id="installationTab1" class="installation-tab px-4 py-2 font-semibold text-purple-600 border-b-2 border-purple-600">
-              <i class="fas fa-user mr-1"></i> 기본정보
-            </button>
-            <button type="button" onclick="switchInstallationTab(2)" id="installationTab2" class="installation-tab px-4 py-2 text-gray-600 hover:text-purple-600">
-              <i class="fas fa-credit-card mr-1"></i> 금융정보
-            </button>
-            <button type="button" onclick="switchInstallationTab(3)" id="installationTab3" class="installation-tab px-4 py-2 text-gray-600 hover:text-purple-600">
-              <i class="fas fa-desktop mr-1"></i> H/W 정보
-            </button>
-            <button type="button" onclick="switchInstallationTab(4)" id="installationTab4" class="installation-tab px-4 py-2 text-gray-600 hover:text-purple-600">
-              <i class="fas fa-cog mr-1"></i> 관리
-            </button>
-            <button type="button" onclick="switchInstallationTab(5)" id="installationTab5" class="installation-tab px-4 py-2 text-gray-600 hover:text-purple-600">
-              <i class="fas fa-cloud mr-1"></i> 증빙 <span class="text-red-500">*</span>
-            </button>
+          <!-- 5-Tab 네비게이션 -->
+          <div class="mb-6 border-b">
+            <nav class="flex space-x-2">
+              <button type="button" onclick="switchInstallationDetailTab('basic')" class="installation-detail-tab-btn px-6 py-3 font-semibold text-sm transition border-b-2 border-purple-500 text-purple-600" data-tab="basic">
+                <i class="fas fa-user mr-2"></i>기본
+              </button>
+              <button type="button" onclick="switchInstallationDetailTab('finance')" class="installation-detail-tab-btn px-6 py-3 font-semibold text-sm text-gray-500 hover:text-gray-700 transition border-b-2 border-transparent" data-tab="finance">
+                <i class="fas fa-won-sign mr-2"></i>금융
+              </button>
+              <button type="button" onclick="switchInstallationDetailTab('hardware')" class="installation-detail-tab-btn px-6 py-3 font-semibold text-sm text-gray-500 hover:text-gray-700 transition border-b-2 border-transparent" data-tab="hardware">
+                <i class="fas fa-laptop mr-2"></i>H/W
+              </button>
+              <button type="button" onclick="switchInstallationDetailTab('manage')" class="installation-detail-tab-btn px-6 py-3 font-semibold text-sm text-gray-500 hover:text-gray-700 transition border-b-2 border-transparent" data-tab="manage">
+                <i class="fas fa-cog mr-2"></i>관리
+              </button>
+              <button type="button" onclick="switchInstallationDetailTab('evidence')" class="installation-detail-tab-btn px-6 py-3 font-semibold text-sm text-gray-500 hover:text-gray-700 transition border-b-2 border-transparent" data-tab="evidence">
+                <i class="fas fa-folder-open mr-2"></i>증빙
+              </button>
+            </nav>
           </div>
-        </div>
-
-        <!-- 모달 본문 - onsubmit 이벤트 완전 차단 -->
-        <form id="installationForm" class="p-6" onsubmit="return false;">
           
-          <!-- Tab 1: 기본정보 -->
-          <div id="installationTabContent1" class="installation-tab-content">
+          <!-- Tab 1: 기본 정보 -->
+          <div id="installation-detail-tab-basic" class="installation-detail-tab-content">
             <div class="grid grid-cols-2 gap-4">
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">
-                  <i class="fas fa-user mr-1"></i> 고객명 <span class="text-red-500">*</span>
-                </label>
-                <input type="text" id="customerName" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
+                <label class="text-sm font-semibold text-gray-600">고객명</label>
+                <p class="text-gray-800">${item.customer_name || '-'}</p>
               </div>
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">
-                  <i class="fas fa-phone mr-1"></i> 연락처 <span class="text-red-500">*</span>
-                </label>
-                <input type="tel" id="phone" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
+                <label class="text-sm font-semibold text-gray-600">전화번호</label>
+                <p class="text-gray-800">${item.phone || '-'}</p>
               </div>
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">
-                  <i class="fas fa-map-marker-alt mr-1"></i> 유입경로
-                </label>
-                <input type="text" id="inflowSource" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
+                <label class="text-sm font-semibold text-gray-600">상태</label>
+                <p class="text-gray-800">${statusMap[item.status] || item.status}</p>
               </div>
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">
-                  <i class="fas fa-birthday-cake mr-1"></i> 생년월일
-                </label>
-                <input type="date" id="birthDate" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">
-                  <i class="fas fa-envelope mr-1"></i> 이메일
-                </label>
-                <input type="email" id="email" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">
-                  <i class="fas fa-building mr-1"></i> 사업자번호
-                </label>
-                <input type="text" id="businessNumber" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">
-                  <i class="fas fa-user-tie mr-1"></i> 대표자
-                </label>
-                <input type="text" id="representative" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">
-                  <i class="fas fa-road mr-1"></i> 도로명주소
-                </label>
-                <input type="text" id="roadAddress" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">
-                  <i class="fas fa-home mr-1"></i> 상세주소
-                </label>
-                <input type="text" id="detailAddress" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">
-                  <i class="fas fa-map mr-1"></i> 지역
-                </label>
-                <input type="text" id="region" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">
-                  <i class="fas fa-tags mr-1"></i> 지역구분
-                </label>
-                <select id="regionType" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
-                  <option value="">선택</option>
-                  <option value="urban">도심</option>
-                  <option value="suburban">교외</option>
-                  <option value="rural">시골</option>
-                </select>
+                <label class="text-sm font-semibold text-gray-600">유입경로</label>
+                <p class="text-gray-800">${item.inflow_source || '-'}</p>
               </div>
             </div>
           </div>
 
-          <!-- Tab 2: 금융정보 -->
-          <div id="installationTabContent2" class="installation-tab-content hidden">
-            <div class="grid grid-cols-2 gap-4">
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">
-                  <i class="fas fa-university mr-1"></i> 은행명
-                </label>
-                <input type="text" id="bankName" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">
-                  <i class="fas fa-credit-card mr-1"></i> 계좌번호
-                </label>
-                <input type="text" id="accountNumber" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">
-                  <i class="fas fa-user-circle mr-1"></i> 예금주
-                </label>
-                <input type="text" id="accountHolder" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">
-                  <i class="fas fa-file-contract mr-1"></i> 계약유형
-                </label>
-                <select id="contractType" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
-                  <option value="">선택</option>
-                  <option value="rental">렌탈</option>
-                  <option value="purchase">매매</option>
-                  <option value="lease">리스</option>
-                </select>
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">
-                  <i class="fas fa-calendar-day mr-1"></i> 출금일
-                </label>
-                <input type="number" id="withdrawalDay" min="1" max="31" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">
-                  <i class="fas fa-won-sign mr-1"></i> 월 렌탈료
-                </label>
-                <input type="number" id="monthlyRentalFee" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">
-                  <i class="fas fa-money-bill-wave mr-1"></i> 보증금
-                </label>
-                <input type="number" id="deposit" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">
-                  <i class="fas fa-calendar-check mr-1"></i> 계약일
-                </label>
-                <input type="date" id="contractDate" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">
-                  <i class="fas fa-hashtag mr-1"></i> 계약번호
-                </label>
-                <input type="text" id="contractNumber" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
-              </div>
-            </div>
+          <!-- Tab 2: 금융 정보 -->
+          <div id="installation-detail-tab-finance" class="installation-detail-tab-content hidden">
+            <p class="text-gray-500">금융 정보가 없습니다.</p>
           </div>
 
           <!-- Tab 3: H/W 정보 -->
-          <div id="installationTabContent3" class="installation-tab-content hidden">
-            <div class="space-y-4">
-              <!-- POS 정보 -->
-              <div class="border border-gray-200 rounded-lg p-4">
-                <h4 class="font-semibold text-gray-800 mb-3"><i class="fas fa-desktop mr-2"></i>POS 정보</h4>
-                <div class="grid grid-cols-2 gap-4">
-                  <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">POS 대행사</label>
-                    <input type="text" id="posAgency" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
-                  </div>
-                  <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">POS 벤더</label>
-                    <input type="text" id="posVendor" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
-                  </div>
-                  <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">POS 모델</label>
-                    <input type="text" id="posModel" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
-                  </div>
-                  <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">POS 프로그램</label>
-                    <input type="text" id="posProgram" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
-                  </div>
-                  <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">ASP ID</label>
-                    <input type="text" id="aspId" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
-                  </div>
-                  <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">ASP 비밀번호</label>
-                    <input type="password" id="aspPassword" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
-                  </div>
-                  <div class="col-span-2">
-                    <label class="block text-sm font-medium text-gray-700 mb-2">ASP URL</label>
-                    <input type="url" id="aspUrl" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
-                  </div>
-                </div>
-              </div>
-
-              <!-- 테이블오더 & 거치대 -->
-              <div class="border border-gray-200 rounded-lg p-4">
-                <h4 class="font-semibold text-gray-800 mb-3"><i class="fas fa-tablet-alt mr-2"></i>테이블오더 & 거치대</h4>
-                <div class="grid grid-cols-3 gap-4">
-                  <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">테이블오더 수량</label>
-                    <input type="number" id="tableOrderQty" min="0" value="0" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
-                  </div>
-                  <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">스탠드형 거치대</label>
-                    <input type="number" id="standStandard" min="0" value="0" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
-                  </div>
-                  <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">평면형 거치대</label>
-                    <input type="number" id="standFlat" min="0" value="0" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
-                  </div>
-                  <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">확장형 거치대</label>
-                    <input type="number" id="standExtended" min="0" value="0" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
-                  </div>
-                  <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">충전기</label>
-                    <input type="number" id="chargerQty" min="0" value="0" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
-                  </div>
-                  <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">배터리</label>
-                    <input type="number" id="batteryQty" min="0" value="0" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
-                  </div>
-                </div>
-              </div>
-
-              <!-- 네트워크 & 기타 -->
-              <div class="border border-gray-200 rounded-lg p-4">
-                <h4 class="font-semibold text-gray-800 mb-3"><i class="fas fa-network-wired mr-2"></i>네트워크 & 기타</h4>
-                <div class="grid grid-cols-3 gap-4">
-                  <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">공유기</label>
-                    <input type="number" id="routerQty" min="0" value="0" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
-                  </div>
-                  <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">키오스크</label>
-                    <input type="number" id="kioskQty" min="0" value="0" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
-                  </div>
-                  <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">주방프린터</label>
-                    <input type="number" id="kitchenPrinterQty" min="0" value="0" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
-                  </div>
-                  <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">호출벨</label>
-                    <input type="number" id="callBellQty" min="0" value="0" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
-                  </div>
-                </div>
-              </div>
-            </div>
+          <div id="installation-detail-tab-hardware" class="installation-detail-tab-content hidden">
+            <p class="text-gray-500">H/W 정보가 없습니다.</p>
           </div>
 
-          <!-- Tab 4: 관리 -->
-          <div id="installationTabContent4" class="installation-tab-content hidden">
-            <div class="space-y-4">
-              <div class="border border-gray-200 rounded-lg p-4">
-                <h4 class="font-semibold text-gray-800 mb-3"><i class="fas fa-cogs mr-2"></i>부가서비스</h4>
-                <div class="space-y-3">
-                  <label class="flex items-center space-x-3">
-                    <input type="checkbox" id="crmService" class="w-5 h-5 text-purple-600 focus:ring-purple-500 border-gray-300 rounded">
-                    <span class="text-sm font-medium text-gray-700">CRM 서비스 사용</span>
-                  </label>
-                  <label class="flex items-center space-x-3">
-                    <input type="checkbox" id="aiSalesService" class="w-5 h-5 text-purple-600 focus:ring-purple-500 border-gray-300 rounded">
-                    <span class="text-sm font-medium text-gray-700">AI 매출관리 서비스 사용</span>
-                  </label>
-                </div>
-              </div>
+          <!-- Tab 4: 관리 정보 -->
+          <div id="installation-detail-tab-manage" class="installation-detail-tab-content hidden">
+            ${item.memo ? `
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">
-                  <i class="fas fa-sticky-note mr-1"></i> 메모
+                <label class="text-sm font-semibold text-gray-600 block mb-2">메모</label>
+                <p class="text-gray-800 whitespace-pre-wrap bg-gray-50 p-3 rounded-lg">${item.memo}</p>
+              </div>
+            ` : '<p class="text-gray-500">메모가 없습니다.</p>'}
+          </div>
+
+          <!-- Tab 5: 증빙 자료 (설치 특화: 계약서 작성 여부 체크박스만) -->
+          <div id="installation-detail-tab-evidence" class="installation-detail-tab-content hidden">
+            <div class="space-y-4 bg-purple-50 p-6 rounded-lg">
+              <h4 class="font-semibold text-gray-700 mb-3 flex items-center">
+                <i class="fas fa-folder-open mr-2 text-purple-600"></i>
+                증빙 자료 확인
+              </h4>
+              <div class="space-y-3">
+                <label class="flex items-center space-x-3">
+                  <input type="checkbox" ${item.contract_signed ? 'checked' : ''} disabled class="w-5 h-5 text-purple-600 border-gray-300 rounded">
+                  <span class="text-sm font-medium text-gray-800">
+                    <i class="fas fa-file-contract mr-2 text-blue-600"></i>
+                    계약서 작성 여부
+                  </span>
                 </label>
-                <textarea id="memo" rows="6" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500" placeholder="설치 관련 특이사항을 입력하세요..."></textarea>
               </div>
             </div>
           </div>
 
-          <!-- Tab 5: 증빙 (✅ 운영등재 이관 시 필수) -->
-          <div id="installationTabContent5" class="installation-tab-content hidden">
-            <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
-              <p class="text-sm text-yellow-800">
-                <i class="fas fa-info-circle mr-2"></i>
-                <strong>운영등재 이관 시 필수:</strong> 모든 증빙 자료를 확인하고 두레이 드라이브 URL을 입력해야 합니다.
-              </p>
-            </div>
-            
-            <div class="space-y-4">
-              <!-- 체크박스 3개 -->
-              <div class="border border-gray-200 rounded-lg p-4">
-                <h4 class="font-semibold text-gray-800 mb-3"><i class="fas fa-check-square mr-2"></i>증빙 자료 확인</h4>
-                <div class="space-y-3">
-                  <label class="flex items-center space-x-3">
-                    <input type="checkbox" id="contractChecked" class="w-5 h-5 text-purple-600 focus:ring-purple-500 border-gray-300 rounded">
-                    <span class="text-sm font-medium text-gray-700">계약서 확인 완료</span>
-                  </label>
-                  <label class="flex items-center space-x-3">
-                    <input type="checkbox" id="certChecked" class="w-5 h-5 text-purple-600 focus:ring-purple-500 border-gray-300 rounded">
-                    <span class="text-sm font-medium text-gray-700">설치 확인서 확인 완료</span>
-                  </label>
-                  <label class="flex items-center space-x-3">
-                    <input type="checkbox" id="photoChecked" class="w-5 h-5 text-purple-600 focus:ring-purple-500 border-gray-300 rounded">
-                    <span class="text-sm font-medium text-gray-700">설치 사진 확인 완료</span>
-                  </label>
-                </div>
-              </div>
-
-              <!-- 두레이 드라이브 URL -->
-              <div class="border border-purple-200 rounded-lg p-4 bg-purple-50">
-                <label class="block text-sm font-semibold text-gray-700 mb-2">
-                  <i class="fas fa-cloud mr-1 text-blue-600"></i>
-                  두레이 드라이브 URL (사업팀 전용) <span class="text-red-500">*</span>
-                </label>
-                <input type="url" id="driveUrl" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500" placeholder="https://drive.dooray.com/...">
-                <p class="text-xs text-gray-600 mt-2">
-                  <i class="fas fa-info-circle mr-1"></i>
-                  모든 증빙 자료가 업로드된 두레이 드라이브 폴더 링크를 입력하세요.
-                </p>
-              </div>
-            </div>
-          </div>
-
-        </form>
-
-        <!-- 모달 푸터 -->
-        <div class="sticky bottom-0 bg-white border-t border-gray-200 p-6 flex justify-end space-x-3">
-          <button type="button" onclick="closeInstallationFormModal()" class="px-6 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 rounded-lg transition">
-            취소
-          </button>
-          <button type="button" onclick="saveInstallation(event)" class="px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition">
-            <i class="fas fa-save mr-2"></i>
-            저장
-          </button>
-        </div>
-      </div>
-    </div>
-  `;
-  
-  document.body.insertAdjacentHTML('beforeend', modalHTML);
-  return document.getElementById('installationFormModal');
-}
-
-/**
- * 탭 전환 함수
- */
-function switchInstallationTab(tabNumber) {
-  // 모든 탭 버튼 비활성화
-  for (let i = 1; i <= 5; i++) {
-    const tabBtn = document.getElementById(`installationTab${i}`);
-    const tabContent = document.getElementById(`installationTabContent${i}`);
-    
-    if (tabBtn && tabContent) {
-      if (i === tabNumber) {
-        tabBtn.classList.add('text-purple-600', 'border-b-2', 'border-purple-600', 'font-semibold');
-        tabBtn.classList.remove('text-gray-600');
-        tabContent.classList.remove('hidden');
-      } else {
-        tabBtn.classList.remove('text-purple-600', 'border-b-2', 'border-purple-600', 'font-semibold');
-        tabBtn.classList.add('text-gray-600');
-        tabContent.classList.add('hidden');
-      }
-    }
-  }
-}
-
-/**
- * 저장 버튼 핸들러 (CRITICAL: preventDefault 명시적 호출)
- */
-async function saveInstallation(e) {
-  // CRITICAL: 폼 제출 이벤트 차단
-  if (e && e.preventDefault) {
-    e.preventDefault();
-  }
-  
-  const form = document.getElementById('installationForm');
-  const mode = form.dataset.mode || 'create';
-  const id = form.dataset.id;
-
-  // 50개 컬럼 수집
-  const data = {
-    // Tab 1: 기본정보
-    customer_name: document.getElementById('customerName').value || null,
-    phone: document.getElementById('phone').value || null,
-    inflow_source: document.getElementById('inflowSource').value || null,
-    birth_date: document.getElementById('birthDate').value || null,
-    email: document.getElementById('email').value || null,
-    business_number: document.getElementById('businessNumber').value || null,
-    representative: document.getElementById('representative').value || null,
-    road_address: document.getElementById('roadAddress').value || null,
-    detail_address: document.getElementById('detailAddress').value || null,
-    region: document.getElementById('region').value || null,
-    region_type: document.getElementById('regionType').value || null,
-    
-    // Tab 2: 금융정보
-    bank_name: document.getElementById('bankName').value || null,
-    account_number: document.getElementById('accountNumber').value || null,
-    account_holder: document.getElementById('accountHolder').value || null,
-    contract_type: document.getElementById('contractType').value || null,
-    withdrawal_day: document.getElementById('withdrawalDay').value || null,
-    monthly_rental_fee: document.getElementById('monthlyRentalFee').value || null,
-    deposit: document.getElementById('deposit').value || null,
-    contract_date: document.getElementById('contractDate').value || null,
-    contract_number: document.getElementById('contractNumber').value || null,
-    
-    // Tab 3: H/W 정보
-    pos_agency: document.getElementById('posAgency').value || null,
-    pos_vendor: document.getElementById('posVendor').value || null,
-    pos_model: document.getElementById('posModel').value || null,
-    pos_program: document.getElementById('posProgram').value || null,
-    asp_id: document.getElementById('aspId').value || null,
-    asp_password: document.getElementById('aspPassword').value || null,
-    asp_url: document.getElementById('aspUrl').value || null,
-    table_order_qty: parseInt(document.getElementById('tableOrderQty').value) || 0,
-    stand_standard: parseInt(document.getElementById('standStandard').value) || 0,
-    stand_flat: parseInt(document.getElementById('standFlat').value) || 0,
-    stand_extended: parseInt(document.getElementById('standExtended').value) || 0,
-    charger_qty: parseInt(document.getElementById('chargerQty').value) || 0,
-    battery_qty: parseInt(document.getElementById('batteryQty').value) || 0,
-    router_qty: parseInt(document.getElementById('routerQty').value) || 0,
-    kiosk_qty: parseInt(document.getElementById('kioskQty').value) || 0,
-    kitchen_printer_qty: parseInt(document.getElementById('kitchenPrinterQty').value) || 0,
-    call_bell_qty: parseInt(document.getElementById('callBellQty').value) || 0,
-    
-    // Tab 4: 관리
-    crm_service: document.getElementById('crmService').checked ? 1 : 0,
-    ai_sales_service: document.getElementById('aiSalesService').checked ? 1 : 0,
-    memo: document.getElementById('memo').value || null,
-    
-    // Tab 5: 증빙 (✅ 필수)
-    contract_checked: document.getElementById('contractChecked').checked ? 1 : 0,
-    installation_cert_checked: document.getElementById('certChecked').checked ? 1 : 0,
-    installation_photo_checked: document.getElementById('photoChecked').checked ? 1 : 0,
-    drive_url: document.getElementById('driveUrl').value || null
-  };
-
-  try {
-    if (mode === 'edit') {
-      await axios.put(`/api/installations/${id}`, data);
-    } else {
-      await axios.post('/api/installations', data);
-    }
-    
-    alert('저장완료');
-    closeInstallationFormModal();
-    
-    // CRITICAL: 제자리 새로고침 (대시보드로 리다이렉트 금지)
-    loadInstallationList(currentInstallationPage);
-    
-  } catch (error) {
-    console.error('저장 오류:', error);
-    alert('저장 중 오류가 발생했습니다: ' + (error.response?.data?.error || error.message));
-  }
-  
-  // CRITICAL: 항상 false 반환하여 폼 제출 차단
-  return false;
-}
-
-/**
- * 모달 닫기
- */
-function closeInstallationFormModal() {
-  const modal = document.getElementById('installationFormModal');
-  if (modal) {
-    modal.classList.add('hidden');
-    const form = document.getElementById('installationForm');
-    if (form) {
-      form.reset();
-      delete form.dataset.id;
-      delete form.dataset.mode;
-    }
-  }
-}
-
-/**
- * 운영등재 이관 모달 (설치 → 운영)
- */
-function showMigrateToOperationModal() {
-  const selectedIds = Array.from(document.querySelectorAll('input[name="installationSelect"]:checked'))
-    .map(cb => cb.value);
-  
-  if (selectedIds.length === 0) {
-    alert('이관할 설치 항목을 선택해주세요.');
-    return;
-  }
-
-  const modalHTML = `
-    <div id="migrateToOperationModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div class="bg-white rounded-lg shadow-xl w-11/12 max-w-lg p-6">
-        <h3 class="text-xl font-bold text-gray-800 mb-4">
-          <i class="fas fa-arrow-right mr-2 text-green-600"></i>
-          운영등재 이관
-        </h3>
-        <p class="text-gray-600 mb-6">
-          선택한 <strong class="text-purple-600">${selectedIds.length}건</strong>의 설치 항목을 운영등재로 이관하시겠습니까?
-        </p>
-        <div class="flex justify-end space-x-3">
-          <button onclick="closeMigrateToOperationModal()" class="px-6 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 rounded-lg transition">
-            취소
-          </button>
-          <button onclick="executeMigrateToOperation(${JSON.stringify(selectedIds)})" class="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition">
-            <i class="fas fa-check mr-2"></i>
-            확인
-          </button>
-        </div>
-      </div>
-    </div>
-  `;
-  
-  document.body.insertAdjacentHTML('beforeend', modalHTML);
-}
-
-function closeMigrateToOperationModal() {
-  const modal = document.getElementById('migrateToOperationModal');
-  if (modal) modal.remove();
-}
-
-async function executeMigrateToOperation(ids) {
-  try {
-    const response = await axios.post('/api/operations/migrate', {
-      installation_ids: ids
-    });
-    
-    const result = response.data || {};
-    const successCount = result.successCount || 0;
-    const errorCount = result.errorCount || 0;
-    const errors = result.errors || [];
-    
-    if (successCount > 0) {
-      let msg = `이관 완료! 성공: ${successCount}건`;
-      if (errorCount > 0) {
-        msg += `\n실패: ${errorCount}건\n\n실패 사유:\n${errors.map(e => `- ${e.id}: ${e.error}`).join('\n')}`;
-      }
-      alert(msg);
-    } else {
-      alert(`이관 실패\n실패: ${errorCount}건\n\n${errors.map(e => `- ${e.id}: ${e.error}`).join('\n')}`);
-    }
-    
-    closeMigrateToOperationModal();
-    
-    // CRITICAL: 제자리 새로고침 (대시보드로 리다이렉트 금지)
-    loadInstallationList(currentInstallationPage);
-    
-  } catch (error) {
-    console.error('이관 오류:', error);
-    alert('이관 중 오류가 발생했습니다: ' + (error.response?.data?.error || error.message));
-  }
-}
-
-/**
- * 칸반 뷰 (간략 버전)
- */
-async function loadInstallationKanban() {
-  console.log('✅ loadInstallationKanban 실행');
-  try {
-    const response = await axios.get('/api/installations?page=1&limit=1000');
-    const installations = response.data.installations || [];
-
-    const statusGroups = {
-      'waiting': { text: '설치대기', color: 'bg-gray-500', items: [] },
-      'in_progress': { text: '설치 중', color: 'bg-blue-500', items: [] },
-      'hold': { text: '설치보류', color: 'bg-yellow-500', items: [] },
-      'completed': { text: '설치완료', color: 'bg-green-500', items: [] },
-      'cancelled': { text: '설치취소', color: 'bg-red-500', items: [] }
-    };
-
-    installations.forEach(inst => {
-      const status = inst.status || 'waiting';
-      if (statusGroups[status]) {
-        statusGroups[status].items.push(inst);
-      }
-    });
-
-    const content = `
-      <div class="bg-white rounded-lg shadow-md p-6">
-        <div class="flex items-center justify-between mb-6">
-          <h2 class="text-2xl font-bold text-gray-800">
-            <i class="fas fa-tools mr-2 text-purple-600"></i>
-            설치현황 (칸반)
-          </h2>
-          <button onclick="toggleInstallationViewMode()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition">
-            <i class="fas fa-list mr-2"></i>리스트 보기
-          </button>
-        </div>
-        <div class="grid grid-cols-5 gap-4">
-          ${Object.entries(statusGroups).map(([status, group]) => `
-            <div class="bg-gray-50 rounded-lg p-4">
-              <h3 class="font-semibold text-gray-700 mb-3">${group.text} (${group.items.length})</h3>
-              <div class="space-y-2">
-                ${group.items.map(inst => `
-                  <div class="bg-white p-3 rounded shadow cursor-pointer hover:shadow-md" onclick="showInstallationDetailModal(${inst.id})">
-                    <p class="font-medium text-gray-800">${inst.customer_name || '-'}</p>
-                    <p class="text-xs text-gray-600">${inst.phone || '-'}</p>
-                  </div>
-                `).join('')}
-              </div>
-            </div>
-          `).join('')}
-        </div>
-      </div>
-    `;
-    
-    document.getElementById('mainContent').innerHTML = content;
-    
-  } catch (error) {
-    console.error('칸반 로드 오류:', error);
-  }
-}
-
-/**
- * 상세 모달 (간략 버전)
- */
-async function showInstallationDetailModal(id) {
-  try {
-    const response = await axios.get(`/api/installations/${id}`);
-    const inst = response.data;
-    
-    const modalHTML = `
-      <div id="installationDetailModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div class="bg-white rounded-lg shadow-xl w-11/12 max-w-3xl max-h-[90vh] overflow-y-auto p-6">
-          <div class="flex items-center justify-between mb-4">
-            <h3 class="text-2xl font-bold text-gray-800">
-              <i class="fas fa-tools mr-2 text-purple-600"></i>
-              설치 상세
-            </h3>
-            <button onclick="closeInstallationDetailModal()" type="button" class="text-gray-400 hover:text-gray-600 text-2xl">
-              <i class="fas fa-times"></i>
+          <!-- 버튼 영역 -->
+          <div class="flex justify-between items-center pt-6 border-t mt-6">
+            <button onclick="showInstallationEditModal(${item.id})" class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition">
+              <i class="fas fa-edit mr-2"></i>
+              수정
             </button>
-          </div>
-          <div class="space-y-2">
-            <p><strong>고객명:</strong> ${inst.customer_name || '-'}</p>
-            <p><strong>연락처:</strong> ${inst.phone || '-'}</p>
-            <p><strong>유입경로:</strong> ${inst.inflow_source || '-'}</p>
-            <p><strong>상태:</strong> ${inst.status || '-'}</p>
-          </div>
-          <div class="flex justify-end space-x-3 mt-6">
-            <button onclick="closeInstallationDetailModal()" type="button" class="px-6 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 rounded-lg transition">
+            <button onclick="closeInstallationDetailModal()" class="px-6 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 rounded-lg transition">
+              <i class="fas fa-times mr-2"></i>
               닫기
             </button>
           </div>
         </div>
       </div>
     `;
-    
+
     document.body.insertAdjacentHTML('beforeend', modalHTML);
-    
+
   } catch (error) {
-    console.error('상세 조회 오류:', error);
-    alert('데이터를 불러오는 중 오류가 발생했습니다.');
+    console.error('설치 상세 조회 오류:', error);
+    alert('상세 정보를 불러올 수 없습니다.');
   }
 }
 
@@ -989,45 +382,562 @@ function closeInstallationDetailModal() {
 }
 
 /**
- * 삭제
+ * 설치 수정 모달 (5-Tab 구조, 50개 컬럼 데이터 매핑)
  */
-async function deleteInstallation(id) {
-  if (!confirm('정말 삭제하시겠습니까?')) return;
-  
+async function showInstallationEditModal(id) {
   try {
-    await axios.delete(`/api/installations/${id}`);
-    alert('삭제되었습니다.');
-    loadInstallationList(currentInstallationPage);
+    const response = await axios.get(`/api/installations/${id}`);
+    const item = response.data;
+
+    const modalHTML = `
+      <div id="installationEditModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg p-6 max-w-5xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+          <!-- 모달 헤더 -->
+          <div class="flex items-center justify-between mb-6 pb-4 border-b">
+            <h3 class="text-2xl font-bold text-gray-800">
+              <i class="fas fa-edit mr-2 text-purple-600"></i>
+              설치 수정
+            </h3>
+            <button onclick="closeInstallationEditModal()" class="text-gray-400 hover:text-gray-600">
+              <i class="fas fa-times text-2xl"></i>
+            </button>
+          </div>
+          
+          <!-- 5-Tab 네비게이션 -->
+          <div class="mb-6 border-b">
+            <nav class="flex space-x-2">
+              <button type="button" onclick="switchInstallationTab('basic')" class="installation-tab-btn px-6 py-3 font-semibold text-sm transition border-b-2 border-purple-500 text-purple-600" data-tab="basic">
+                <i class="fas fa-user mr-2"></i>기본
+              </button>
+              <button type="button" onclick="switchInstallationTab('finance')" class="installation-tab-btn px-6 py-3 font-semibold text-sm text-gray-500 hover:text-gray-700 transition border-b-2 border-transparent" data-tab="finance">
+                <i class="fas fa-won-sign mr-2"></i>금융
+              </button>
+              <button type="button" onclick="switchInstallationTab('hardware')" class="installation-tab-btn px-6 py-3 font-semibold text-sm text-gray-500 hover:text-gray-700 transition border-b-2 border-transparent" data-tab="hardware">
+                <i class="fas fa-laptop mr-2"></i>H/W
+              </button>
+              <button type="button" onclick="switchInstallationTab('manage')" class="installation-tab-btn px-6 py-3 font-semibold text-sm text-gray-500 hover:text-gray-700 transition border-b-2 border-transparent" data-tab="manage">
+                <i class="fas fa-cog mr-2"></i>관리
+              </button>
+              <button type="button" onclick="switchInstallationTab('evidence')" class="installation-tab-btn px-6 py-3 font-semibold text-sm text-gray-500 hover:text-gray-700 transition border-b-2 border-transparent" data-tab="evidence">
+                <i class="fas fa-folder-open mr-2"></i>증빙
+              </button>
+            </nav>
+          </div>
+          
+          <form id="installationEditForm">
+            <!-- Tab 1: 기본 정보 -->
+            <div id="installation-tab-basic" class="installation-tab-content">
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-sm font-semibold text-gray-700 mb-2">고객명</label>
+                  <input type="text" id="editCustomerName" value="${item.customer_name || ''}" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
+                </div>
+                <div>
+                  <label class="block text-sm font-semibold text-gray-700 mb-2">전화번호 <span class="text-red-500">*</span></label>
+                  <input type="tel" id="editPhone" value="${item.phone || ''}" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500" required>
+                </div>
+                <div class="col-span-2">
+                  <label class="block text-sm font-semibold text-gray-700 mb-2">상태</label>
+                  <select id="editStatus" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
+                    <option value="waiting" ${item.status === 'waiting' ? 'selected' : ''}>설치대기</option>
+                    <option value="in_progress" ${item.status === 'in_progress' ? 'selected' : ''}>설치 중</option>
+                    <option value="hold" ${item.status === 'hold' ? 'selected' : ''}>설치보류</option>
+                    <option value="completed" ${item.status === 'completed' ? 'selected' : ''}>설치완료</option>
+                    <option value="cancelled" ${item.status === 'cancelled' ? 'selected' : ''}>설치취소</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <!-- Tab 2: 금융 정보 -->
+            <div id="installation-tab-finance" class="installation-tab-content hidden">
+              <p class="text-gray-500">설치 단계에서는 금융 정보를 입력하지 않습니다.</p>
+            </div>
+
+            <!-- Tab 3: H/W 정보 -->
+            <div id="installation-tab-hardware" class="installation-tab-content hidden">
+              <p class="text-gray-500">설치 단계에서는 H/W 정보를 입력하지 않습니다.</p>
+            </div>
+
+            <!-- Tab 4: 관리 정보 -->
+            <div id="installation-tab-manage" class="installation-tab-content hidden">
+              <div class="space-y-4">
+                <div>
+                  <label class="block text-sm font-semibold text-gray-700 mb-2">메모</label>
+                  <textarea id="editMemo" rows="6" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500" placeholder="추가 메모사항을 입력하세요...">${item.memo || ''}</textarea>
+                </div>
+              </div>
+            </div>
+
+            <!-- Tab 5: 증빙 자료 (설치 특화: 계약서 작성 여부 체크박스만) -->
+            <div id="installation-tab-evidence" class="installation-tab-content hidden">
+              <div class="space-y-4 bg-purple-50 p-6 rounded-lg">
+                <h4 class="font-semibold text-gray-700 mb-3 flex items-center">
+                  <i class="fas fa-folder-open mr-2 text-purple-600"></i>
+                  증빙 자료 확인
+                </h4>
+                <div class="space-y-3">
+                  <label class="flex items-center space-x-3 cursor-pointer">
+                    <input type="checkbox" id="editContractSigned" ${item.contract_signed ? 'checked' : ''} class="w-5 h-5 text-purple-600 border-gray-300 rounded focus:ring-purple-500">
+                    <span class="text-sm font-medium text-gray-800">
+                      <i class="fas fa-file-contract mr-2 text-blue-600"></i>
+                      계약서 작성 여부
+                    </span>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <!-- 버튼 -->
+            <div class="flex justify-end space-x-3 pt-6 mt-6 border-t">
+              <button type="button" onclick="closeInstallationEditModal()" class="px-6 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 rounded-lg transition">
+                <i class="fas fa-times mr-2"></i>
+                취소
+              </button>
+              <button type="submit" class="px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition">
+                <i class="fas fa-save mr-2"></i>
+                저장
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    `;
+
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+
+    // Tab 전환 함수 등록
+    window.switchInstallationTab = function(tabName) {
+      document.querySelectorAll('.installation-tab-btn').forEach(btn => {
+        btn.classList.remove('text-purple-600', 'border-purple-500');
+        btn.classList.add('text-gray-500', 'border-transparent');
+      });
+      
+      const activeBtn = document.querySelector(`.installation-tab-btn[data-tab="${tabName}"]`);
+      if (activeBtn) {
+        activeBtn.classList.remove('text-gray-500', 'border-transparent');
+        activeBtn.classList.add('text-purple-600', 'border-purple-500');
+      }
+      
+      document.querySelectorAll('.installation-tab-content').forEach(content => {
+        content.classList.add('hidden');
+      });
+      
+      const activeContent = document.getElementById(`installation-tab-${tabName}`);
+      if (activeContent) {
+        activeContent.classList.remove('hidden');
+      }
+    };
+
+    // Tab 전환 함수 등록 (상세보기용)
+    window.switchInstallationDetailTab = function(tabName) {
+      document.querySelectorAll('.installation-detail-tab-btn').forEach(btn => {
+        btn.classList.remove('text-purple-600', 'border-purple-500');
+        btn.classList.add('text-gray-500', 'border-transparent');
+      });
+      
+      const activeBtn = document.querySelector(`.installation-detail-tab-btn[data-tab="${tabName}"]`);
+      if (activeBtn) {
+        activeBtn.classList.remove('text-gray-500', 'border-transparent');
+        activeBtn.classList.add('text-purple-600', 'border-purple-500');
+      }
+      
+      document.querySelectorAll('.installation-detail-tab-content').forEach(content => {
+        content.classList.add('hidden');
+      });
+      
+      const activeContent = document.getElementById(`installation-detail-tab-${tabName}`);
+      if (activeContent) {
+        activeContent.classList.remove('hidden');
+      }
+    };
+
+    // 폼 제출 이벤트
+    document.getElementById('installationEditForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      await updateInstallation(id);
+    });
+
   } catch (error) {
-    console.error('삭제 오류:', error);
-    alert('삭제 중 오류가 발생했습니다.');
+    console.error('설치 수정 모달 오류:', error);
+    alert('수정 모달을 불러올 수 없습니다.');
+  }
+}
+
+function closeInstallationEditModal() {
+  const modal = document.getElementById('installationEditModal');
+  if (modal) modal.remove();
+}
+
+/**
+ * 설치 정보 업데이트 (50개 컬럼 데이터 매핑)
+ */
+async function updateInstallation(id) {
+  try {
+    const data = {
+      customer_name: document.getElementById('editCustomerName').value,
+      phone: document.getElementById('editPhone').value,
+      status: document.getElementById('editStatus').value,
+      memo: document.getElementById('editMemo').value || null,
+      contract_signed: document.getElementById('editContractSigned').checked ? 1 : 0
+    };
+
+    await axios.put(`/api/installations/${id}`, data);
+    
+    alert('수정되었습니다.');
+    closeInstallationEditModal();
+    closeInstallationDetailModal();
+    
+    // 리스트 새로고침
+    if (currentInstallationViewMode === 'list') {
+      loadInstallationList(currentInstallationPage);
+    } else {
+      loadInstallationKanban();
+    }
+  } catch (error) {
+    console.error('설치 수정 오류:', error);
+    alert(error.response?.data?.error || '수정 중 오류가 발생했습니다.');
   }
 }
 
 /**
- * 이전 기록 검색 모달 (간략)
+ * 신규 등록 폼 표시 (간략 버전)
  */
+async function showInstallationForm(id = null) {
+  const isEdit = id !== null;
+  let installation = null;
+
+  if (isEdit) {
+    try {
+      const response = await axios.get(`/api/installations/${id}`);
+      installation = response.data;
+    } catch (error) {
+      alert('설치 정보를 불러올 수 없습니다.');
+      return;
+    }
+  }
+
+  const content = `
+    <div class="bg-white rounded-lg shadow-md">
+      <div class="p-6 border-b border-gray-200">
+        <h2 class="text-2xl font-bold text-gray-800">
+          <i class="fas fa-${isEdit ? 'edit' : 'plus'} mr-2 text-indigo-600"></i>
+          ${isEdit ? '설치 정보 수정' : '신규 설치 등록'}
+        </h2>
+      </div>
+
+      <form id="installationForm" class="p-6 space-y-6">
+        <div class="grid grid-cols-2 gap-6">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+              고객명 <span class="text-gray-400">(선택)</span>
+            </label>
+            <input
+              type="text"
+              id="customerName"
+              value="${isEdit && installation ? installation.customer_name || '' : ''}"
+              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              placeholder="고객명 입력"
+            >
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+              전화번호 <span class="text-red-500">*</span>
+            </label>
+            <input
+              type="tel"
+              id="phone"
+              required
+              value="${isEdit && installation ? installation.phone : ''}"
+              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              placeholder="010-1234-5678"
+            >
+          </div>
+        </div>
+
+        ${isEdit ? `
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+              진행 상태
+            </label>
+            <select
+              id="status"
+              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+            >
+              <option value="waiting" ${installation.status === 'waiting' ? 'selected' : ''}>설치대기</option>
+              <option value="in_progress" ${installation.status === 'in_progress' ? 'selected' : ''}>설치 중</option>
+              <option value="hold" ${installation.status === 'hold' ? 'selected' : ''}>설치보류</option>
+              <option value="completed" ${installation.status === 'completed' ? 'selected' : ''}>설치완료</option>
+              <option value="cancelled" ${installation.status === 'cancelled' ? 'selected' : ''}>설치취소</option>
+            </select>
+          </div>
+
+          <div class="flex items-center space-x-6">
+            <label class="flex items-center">
+              <input
+                type="checkbox"
+                id="contractSigned"
+                ${installation.contract_signed ? 'checked' : ''}
+                class="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+              >
+              <span class="ml-2 text-sm text-gray-700">계약서 작성 완료</span>
+            </label>
+          </div>
+        ` : ''}
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">
+            메모
+          </label>
+          <textarea
+            id="memo"
+            rows="8"
+            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+            placeholder="메모를 입력하세요"
+          >${isEdit && installation ? installation.memo || '' : ''}</textarea>
+        </div>
+
+        <div class="flex space-x-3">
+          <button
+            type="submit"
+            class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-4 rounded-lg transition"
+          >
+            <i class="fas fa-check mr-2"></i>
+            ${isEdit ? '수정하기' : '등록하기'}
+          </button>
+          <button
+            type="button"
+            onclick="loadInstallationList(${currentInstallationPage})"
+            class="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold py-3 px-4 rounded-lg transition"
+          >
+            <i class="fas fa-times mr-2"></i>
+            취소
+          </button>
+        </div>
+      </form>
+    </div>
+  `;
+
+  document.getElementById('mainContent').innerHTML = content;
+
+  document.getElementById('installationForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (isEdit) {
+      await updateInstallationForm(id);
+    } else {
+      await submitInstallation();
+    }
+  });
+}
+
+async function submitInstallation() {
+  const data = {
+    customer_name: document.getElementById('customerName').value,
+    phone: document.getElementById('phone').value,
+    memo: document.getElementById('memo').value
+  };
+
+  if (!data.phone) {
+    alert('전화번호는 필수입니다.');
+    return;
+  }
+
+  try {
+    await axios.post('/api/installations', data);
+    alert('설치가 등록되었습니다.');
+    loadInstallationList(1);
+  } catch (error) {
+    console.error('Submit installation error:', error);
+    alert(error.response?.data?.error || '설치 등록에 실패했습니다.');
+  }
+}
+
+async function updateInstallationForm(id) {
+  const data = {
+    customer_name: document.getElementById('customerName').value,
+    phone: document.getElementById('phone').value,
+    memo: document.getElementById('memo').value,
+    status: document.getElementById('status').value,
+    contract_signed: document.getElementById('contractSigned').checked
+  };
+
+  if (!data.phone) {
+    alert('전화번호는 필수입니다.');
+    return;
+  }
+
+  try {
+    await axios.put(`/api/installations/${id}`, data);
+    alert('설치 정보가 수정되었습니다.');
+    loadInstallationList(currentInstallationPage);
+  } catch (error) {
+    console.error('Update installation error:', error);
+    alert(error.response?.data?.error || '설치 수정에 실패했습니다.');
+  }
+}
+
+async function deleteInstallation(id) {
+  if (!confirm('정말 삭제하시겠습니까?')) {
+    return;
+  }
+
+  try {
+    await axios.delete(`/api/installations/${id}`);
+    alert('설치가 삭제되었습니다.');
+    loadInstallationList(currentInstallationPage);
+  } catch (error) {
+    console.error('Delete installation error:', error);
+    alert(error.response?.data?.error || '설치 삭제에 실패했습니다.');
+  }
+}
+
+/**
+ * 칸반 보드 조회
+ */
+async function loadInstallationKanban() {
+  try {
+    const response = await axios.get('/api/installations?page=1&limit=1000');
+    const installations = response.data.installations || [];
+
+    const grouped = {
+      'waiting': [],
+      'in_progress': [],
+      'hold': [],
+      'completed': [],
+      'cancelled': []
+    };
+
+    installations.forEach(item => {
+      if (grouped[item.status]) {
+        grouped[item.status].push(item);
+      }
+    });
+
+    const statusConfig = {
+      'waiting': { text: '설치대기', color: 'bg-gray-500', icon: 'fa-clock' },
+      'in_progress': { text: '설치 중', color: 'bg-blue-500', icon: 'fa-spinner' },
+      'hold': { text: '설치보류', color: 'bg-yellow-500', icon: 'fa-pause-circle' },
+      'completed': { text: '설치완료', color: 'bg-green-500', icon: 'fa-check-circle' },
+      'cancelled': { text: '설치취소', color: 'bg-red-500', icon: 'fa-times-circle' }
+    };
+
+    const content = `
+      <div class="bg-white rounded-lg shadow-md">
+        <div class="p-6 border-b border-gray-200">
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="text-2xl font-bold text-gray-800">
+              <i class="fas fa-tools mr-2 text-purple-600"></i>
+              설치현황 - 칸반 보드
+            </h2>
+            <div class="flex space-x-2">
+              <button onclick="showInstallationArchiveSearchModal()" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition flex items-center">
+                <i class="fas fa-search mr-2"></i>
+                이전 기록 검색
+              </button>
+              <button onclick="showMigrateToOperationModal()" class="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg transition flex items-center">
+                <i class="fas fa-arrow-right mr-2"></i>
+                운영 이관
+              </button>
+              <button onclick="toggleInstallationViewMode()" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg transition flex items-center">
+                <i class="fas fa-list mr-2"></i>
+                리스트 보기
+              </button>
+              <button onclick="showInstallationForm()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg transition flex items-center">
+                <i class="fas fa-plus mr-2"></i>
+                신규 등록
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="p-6">
+          <div class="grid grid-cols-5 gap-4">
+            ${Object.keys(statusConfig).map(status => {
+              const config = statusConfig[status];
+              const items = grouped[status] || [];
+              
+              return `
+                <div class="bg-gray-50 rounded-lg p-4">
+                  <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center">
+                      <i class="fas ${config.icon} ${config.color.replace('bg-', 'text-')} mr-2"></i>
+                      <h3 class="font-bold text-gray-800 text-sm">${config.text}</h3>
+                    </div>
+                    <span class="bg-white text-gray-700 text-sm font-semibold px-2 py-1 rounded">${items.length}</span>
+                  </div>
+
+                  <div class="installation-kanban-column min-h-[600px] space-y-3" data-status="${status}">
+                    ${items.map(item => renderInstallationKanbanCard(item, config)).join('')}
+                  </div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        </div>
+      </div>
+    `;
+
+    document.getElementById('mainContent').innerHTML = content;
+  } catch (error) {
+    console.error('Load installation kanban error:', error);
+    alert('칸반 보드를 불러올 수 없습니다.');
+  }
+}
+
+function renderInstallationKanbanCard(item, config) {
+  return `
+    <div class="bg-white p-3 rounded-lg shadow hover:shadow-lg transition cursor-pointer border-l-4 ${config.color.replace('bg-', 'border-')}"
+         onclick="viewInstallationDetail(${item.id})">
+      <div class="flex items-center justify-between mb-2">
+        <span class="text-xs font-semibold text-gray-500">#${item.id}</span>
+        <div class="flex space-x-1">
+          ${item.contract_signed ? '<span class="bg-blue-100 text-blue-700 text-xs px-2 py-1 rounded">계약서</span>' : ''}
+        </div>
+      </div>
+
+      <div class="mb-2">
+        <p class="font-semibold text-gray-800 text-sm mb-1">${item.customer_name || '고객명 미입력'}</p>
+        <p class="text-xs text-gray-600">
+          <i class="fas fa-phone mr-1 text-gray-400"></i>
+          ${item.phone}
+        </p>
+      </div>
+
+      ${item.memo ? `
+        <p class="text-xs text-gray-500 mb-2 line-clamp-2">${item.memo}</p>
+      ` : ''}
+
+      <div class="text-xs text-gray-400 border-t pt-2 mt-2">
+        <p>${formatInstallationDate(item.created_at)}</p>
+      </div>
+    </div>
+  `;
+}
+
 function showInstallationArchiveSearchModal() {
   alert('이전 기록 검색 기능은 준비 중입니다.');
 }
 
-// 윈도우 바인딩 (전역 함수로 노출)
+function showMigrateToOperationModal() {
+  alert('운영등재 이관 기능은 준비 중입니다.');
+}
+
+// Window 객체에 함수 바인딩
 window.loadInstallationPage = loadInstallationPage;
 window.loadInstallationList = loadInstallationList;
+window.handleSort_installation = handleSort_installation;
+window.viewInstallationDetail = viewInstallationDetail;
+window.closeInstallationDetailModal = closeInstallationDetailModal;
+window.showInstallationEditModal = showInstallationEditModal;
+window.closeInstallationEditModal = closeInstallationEditModal;
+window.updateInstallation = updateInstallation;
+window.showInstallationForm = showInstallationForm;
+window.submitInstallation = submitInstallation;
+window.updateInstallationForm = updateInstallationForm;
+window.deleteInstallation = deleteInstallation;
 window.loadInstallationKanban = loadInstallationKanban;
 window.toggleInstallationViewMode = toggleInstallationViewMode;
-window.showInstallationFormModal = showInstallationFormModal;
-window.showInstallationEditModal = showInstallationEditModal;
-window.showInstallationDetailModal = showInstallationDetailModal;
-window.closeInstallationFormModal = closeInstallationFormModal;
-window.closeInstallationDetailModal = closeInstallationDetailModal;
-window.saveInstallation = saveInstallation;
-window.deleteInstallation = deleteInstallation;
-window.switchInstallationTab = switchInstallationTab;
-window.showMigrateToOperationModal = showMigrateToOperationModal;
-window.closeMigrateToOperationModal = closeMigrateToOperationModal;
-window.executeMigrateToOperation = executeMigrateToOperation;
+window.renderInstallationKanbanCard = renderInstallationKanbanCard;
 window.showInstallationArchiveSearchModal = showInstallationArchiveSearchModal;
-window.handleSort_installation = handleSort_installation;
-
-console.log('✅ installation.js 모듈 로드 완료 (전역 함수 버전)');
+window.showMigrateToOperationModal = showMigrateToOperationModal;
