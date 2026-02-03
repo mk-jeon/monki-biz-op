@@ -36,6 +36,7 @@ function formatDate(dateString) {
 let currentContractPage = 1;
 let currentContractViewMode = 'list'; // 'list' or 'kanban'
 let contractTypes = []; // 계약유형 목록
+let registrationReasons = []; // 등록사유 목록 (Registration Reason)
 
 /**
  * ⚠️ [중요] 테이블 헤더 한글 매핑 상수
@@ -78,11 +79,12 @@ async function loadContractPage() {
       contractTypes = items;
       itemCache['contract_type'] = items;
     }),
-    loadDropdownItems('inflow_source').then(items => {
-      itemCache['inflow_source'] = items;
+    loadDropdownItems('registration_reason').then(items => {
+      registrationReasons = items;
+      itemCache['registration_reason'] = items;
     })
   ]);
-  console.log('✅ contractTypes 로드 완료');
+  console.log('✅ contractTypes, registrationReasons 로드 완료');
   
   // 리스트 모드로 시작
   console.log('✅ loadContractList 호출 직전');
@@ -307,19 +309,20 @@ async function showContractForm(id = null) {
           </div>
         </div>
 
-        <!-- 유입경로 -->
+        <!-- 등록사유 (Registration Reason) -->
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-2">
-            유입경로
+            등록사유 <span class="text-red-500">*</span>
           </label>
           <select
-            id="inflowSource"
+            id="registrationReason"
+            required
             class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
           >
             <option value="">선택하세요</option>
-            ${inflowSources.map(source => `
-              <option value="${source.value}" ${isEdit && contract && contract.inflow_source === source.value ? 'selected' : ''}>
-                ${source.value}
+            ${registrationReasons.map(reason => `
+              <option value="${reason.value}" ${isEdit && contract && contract.registration_reason === reason.value ? 'selected' : ''}>
+                ${reason.label}
               </option>
             `).join('')}
           </select>
@@ -412,7 +415,7 @@ async function submitContract() {
   const data = {
     customer_name: document.getElementById('customerName').value,
     phone: document.getElementById('phone').value,
-    inflow_source: document.getElementById('inflowSource').value,
+    registration_reason: document.getElementById('registrationReason').value,
     notes: document.getElementById('notes').value
   };
 
@@ -438,7 +441,7 @@ async function updateContract(id) {
   const data = {
     customer_name: document.getElementById('customerName').value,
     phone: document.getElementById('phone').value,
-    inflow_source: document.getElementById('inflowSource').value,
+    registration_reason: document.getElementById('registrationReason').value,
     notes: document.getElementById('notes').value,
     status: document.getElementById('status').value,
     pre_installation: document.getElementById('preInstallation').checked

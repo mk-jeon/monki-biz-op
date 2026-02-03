@@ -988,18 +988,10 @@ function showInstallationArchiveSearchModal() {
 
 /**
  * ===============================================
- * 드롭다운 항목 로드 (공통 함수 활용)
+ * 드롭다운 항목 로드 (dropdown-helper.js의 전역 함수 사용)
  * ===============================================
+ * 주의: loadDropdownItems는 dropdown-helper.js에서 전역으로 정의되어 있음
  */
-async function loadDropdownItems(category) {
-  try {
-    const response = await axios.get(`/api/items?category=${category}`);
-    return response.data.items || [];
-  } catch (error) {
-    console.error('드롭다운 로드 오류:', error);
-    return [];
-  }
-}
 
 // 윈도우 바인딩 (CRITICAL: loadInstallationPage 추가)
 window.loadInstallationPage = loadInstallationPage;
